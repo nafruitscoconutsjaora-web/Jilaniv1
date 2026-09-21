@@ -17,6 +17,13 @@ class Auth {
     }
 
     /**
+     * Alias for check()
+     */
+    public static function isLoggedIn(): bool {
+        return self::check();
+    }
+
+    /**
      * Get Logged-in User ID
      */
     public static function id(): ?int {

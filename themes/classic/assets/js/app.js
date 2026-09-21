@@ -1,21 +1,126 @@
 /**
- * Rose SMM Panel - Vanilla JavaScript (User Panel & Public)
+ * Rose SMM Panel - Vanilla JavaScript (User Panel, Admin & Public Landing)
  * No frameworks - pure vanilla JS
  */
 
 document.addEventListener('DOMContentLoaded', function () {
-  // 1. Mobile Sidebar Toggle
+  // --------------------------------------------------------------------------
+  // 1. Landing Page Navigation Toggle (Mobile & Tablet)
+  // --------------------------------------------------------------------------
+  const landingNavToggle = document.getElementById('landing_nav_toggle');
+  const landingNavMenu = document.getElementById('public_nav_menu');
+
+  if (landingNavToggle && landingNavMenu) {
+    // Create backdrop overlay element for landing navigation
+    let landingBackdrop = document.querySelector('.landing-nav-backdrop');
+    if (!landingBackdrop) {
+      landingBackdrop = document.createElement('div');
+      landingBackdrop.className = 'landing-nav-backdrop';
+      document.body.appendChild(landingBackdrop);
+    }
+
+    function openLandingMenu() {
+      landingNavToggle.classList.add('open');
+      landingNavMenu.classList.add('open');
+      landingNavToggle.setAttribute('aria-expanded', 'true');
+      landingBackdrop.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLandingMenu() {
+      landingNavToggle.classList.remove('open');
+      landingNavMenu.classList.remove('open');
+      landingNavToggle.setAttribute('aria-expanded', 'false');
+      landingBackdrop.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    landingNavToggle.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (landingNavMenu.classList.contains('open')) {
+        closeLandingMenu();
+      } else {
+        openLandingMenu();
+      }
+    });
+
+    landingBackdrop.addEventListener('click', closeLandingMenu);
+
+    // Close when clicking any link inside the mobile drawer
+    const menuLinks = landingNavMenu.querySelectorAll('a');
+    menuLinks.forEach(link => {
+      link.addEventListener('click', closeLandingMenu);
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && landingNavMenu.classList.contains('open')) {
+        closeLandingMenu();
+      }
+    });
+
+    // Close automatically if screen is resized beyond mobile breakpoint (> 860px)
+    window.addEventListener('resize', function () {
+      if (window.innerWidth > 860 && landingNavMenu.classList.contains('open')) {
+        closeLandingMenu();
+      }
+    });
+  }
+
+  // --------------------------------------------------------------------------
+  // 2. User & Admin Panel Mobile Sidebar Toggle
+  // --------------------------------------------------------------------------
   const mobileToggle = document.querySelector('.mobile-toggle');
   const sidebar = document.querySelector('.panel-sidebar');
+
   if (mobileToggle && sidebar) {
-    mobileToggle.addEventListener('click', function () {
-      sidebar.classList.toggle('open');
+    let sidebarBackdrop = document.querySelector('.sidebar-backdrop');
+    if (!sidebarBackdrop) {
+      sidebarBackdrop = document.createElement('div');
+      sidebarBackdrop.className = 'sidebar-backdrop';
+      document.body.appendChild(sidebarBackdrop);
+    }
+
+    function openSidebar() {
+      sidebar.classList.add('open');
+      sidebarBackdrop.classList.add('open');
+      mobileToggle.setAttribute('aria-expanded', 'true');
+    }
+
+    function closeSidebar() {
+      sidebar.classList.remove('open');
+      sidebarBackdrop.classList.remove('open');
+      mobileToggle.setAttribute('aria-expanded', 'false');
+    }
+
+    mobileToggle.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (sidebar.classList.contains('open')) {
+        closeSidebar();
+      } else {
+        openSidebar();
+      }
     });
+
+    sidebarBackdrop.addEventListener('click', closeSidebar);
 
     // Close when clicking outside
     document.addEventListener('click', function (e) {
       if (!sidebar.contains(e.target) && !mobileToggle.contains(e.target) && sidebar.classList.contains('open')) {
-        sidebar.classList.remove('open');
+        closeSidebar();
+      }
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && sidebar.classList.contains('open')) {
+        closeSidebar();
+      }
+    });
+
+    window.addEventListener('resize', function () {
+      if (window.innerWidth > 900 && sidebar.classList.contains('open')) {
+        closeSidebar();
       }
     });
   }
