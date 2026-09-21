@@ -16,10 +16,15 @@ date_default_timezone_set('UTC');
 if (session_status() === PHP_SESSION_NONE) {
     ini_set('session.cookie_httponly', '1');
     ini_set('session.use_only_cookies', '1');
-    ini_set('session.cookie_samesite', 'Lax');
-    // If running over HTTPS, enable secure cookie
-    if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+    $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ||
+               (!empty($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https') ||
+               (!empty($_SERVER['HTTP_X_FORWARDED_SSL']) && $_SERVER['HTTP_X_FORWARDED_SSL'] === 'on');
+
+    if ($isHttps) {
         ini_set('session.cookie_secure', '1');
+        ini_set('session.cookie_samesite', 'None');
+    } else {
+        ini_set('session.cookie_samesite', 'Lax');
     }
     session_name('smm_session');
     session_start();

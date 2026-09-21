@@ -95,6 +95,9 @@ switch ($requestUri) {
         exit;
 
     case '/services':
+        if (Auth::check()) {
+            redirect('/user/services');
+        }
         require __DIR__ . '/themes/classic/views/landing/services.php';
         exit;
 
@@ -168,10 +171,12 @@ switch ($requestUri) {
     // User Panel Routes (Requires Login)
     // ------------------------------------------------------------------------
     case '/dashboard':
+        Auth::requireLogin();
         require __DIR__ . '/themes/classic/views/user/dashboard.php';
         exit;
 
     case '/new-order':
+        Auth::requireLogin();
         require __DIR__ . '/themes/classic/views/user/new_order.php';
         exit;
 
@@ -275,14 +280,17 @@ switch ($requestUri) {
         exit;
 
     case '/orders':
+        Auth::requireLogin();
         require __DIR__ . '/themes/classic/views/user/orders.php';
         exit;
 
     case '/user/services':
+        Auth::requireLogin();
         require __DIR__ . '/themes/classic/views/user/services.php';
         exit;
 
     case '/add-funds':
+        Auth::requireLogin();
         require __DIR__ . '/themes/classic/views/user/add_funds.php';
         exit;
 
@@ -345,6 +353,7 @@ switch ($requestUri) {
         exit;
 
     case '/tickets':
+        Auth::requireLogin();
         require __DIR__ . '/themes/classic/views/user/tickets.php';
         exit;
 
@@ -386,6 +395,7 @@ switch ($requestUri) {
         exit;
 
     case '/tickets/view':
+        Auth::requireLogin();
         require __DIR__ . '/themes/classic/views/user/ticket_view.php';
         exit;
 
@@ -411,6 +421,7 @@ switch ($requestUri) {
         exit;
 
     case '/profile':
+        Auth::requireLogin();
         require __DIR__ . '/themes/classic/views/user/profile.php';
         exit;
 
@@ -470,6 +481,7 @@ switch ($requestUri) {
         exit;
 
     case '/api-docs':
+        Auth::requireLogin();
         require __DIR__ . '/themes/classic/views/user/api_docs.php';
         exit;
 

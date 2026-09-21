@@ -8,7 +8,7 @@ $siteName = e(get_setting('site_name', 'RoseSMM'));
 ?>
 <aside class="panel-sidebar" id="user_sidebar">
   <!-- Brand Header -->
-  <div class="sidebar-header" style="padding: 1.25rem 1.25rem 0.875rem;">
+  <div class="sidebar-header" style="padding: 1.25rem 1.25rem 0.875rem; display: flex; align-items: center; justify-content: space-between;">
     <a href="/dashboard" style="display: flex; align-items: center; gap: 0.75rem; text-decoration: none;" id="user_sidebar_logo">
       <div style="width: 40px; height: 40px; border-radius: var(--radius-md); background: linear-gradient(135deg, var(--rose-500) 0%, var(--primary-rose) 100%); display: flex; align-items: center; justify-content: center; color: #ffffff; box-shadow: 0 4px 10px rgba(225, 29, 72, 0.3);">
         <!-- Rose / Heart SVG -->
@@ -25,6 +25,7 @@ $siteName = e(get_setting('site_name', 'RoseSMM'));
         </div>
       </div>
     </a>
+    <button type="button" class="sidebar-close-btn" id="user_sidebar_close" aria-label="Close navigation">&times;</button>
   </div>
 
   <!-- User Profile Card -->
