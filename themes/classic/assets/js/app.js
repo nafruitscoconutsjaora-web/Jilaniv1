@@ -155,7 +155,16 @@ document.addEventListener('DOMContentLoaded', function () {
       });
 
       if (filtered.length > 0) {
-        serviceSelect.selectedIndex = 1;
+        if (window.preselectedServiceId) {
+          const preIdx = Array.from(serviceSelect.options).findIndex(o => o.value == window.preselectedServiceId);
+          if (preIdx !== -1) {
+            serviceSelect.selectedIndex = preIdx;
+          } else {
+            serviceSelect.selectedIndex = 1;
+          }
+        } else {
+          serviceSelect.selectedIndex = 1;
+        }
         updateServiceDetails();
       } else {
         updateServiceDetails();

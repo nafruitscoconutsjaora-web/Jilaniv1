@@ -40,24 +40,11 @@ $currentPage = $currentPage ?? 'dashboard';
         <h2 style="font-size: 1.125rem; font-weight: 700; margin: 0;"><?= e($pageTitle ?? 'Dashboard') ?></h2>
       </div>
 
-      <div style="display: flex; align-items: center; gap: 1rem; flex-wrap: wrap;">
-        <!-- Currency Selection - ONLY Visible to Authenticated Logged-In Users -->
-        <form method="POST" action="/user/currency" class="currency-selector-form" id="user_currency_form">
-          <?= csrf_field() ?>
-          <label for="user_currency_select" style="font-size: 0.8125rem; font-weight: 600; color: var(--text-muted);">Currency:</label>
-          <select name="currency" id="user_currency_select" class="currency-select" onchange="this.form.submit()">
-            <?php foreach ($activeCurrencies as $c): ?>
-              <option value="<?= e($c['code']) ?>" <?= $user['currency_code'] === $c['code'] ? 'selected' : '' ?>>
-                <?= e($c['code']) ?> (<?= e($c['symbol']) ?>)
-              </option>
-            <?php endforeach; ?>
-          </select>
-        </form>
-
-        <!-- Real Wallet Balance with Converted Numerical Value -->
+      <div style="display: flex; align-items: center; gap: 0.875rem; flex-wrap: wrap;">
+        <!-- Real Wallet Balance in INR -->
         <div class="user-balance-pill" id="user_wallet_pill">
-          <span>Balance:</span>
-          <span><?= Currency::format((float)$user['balance'], $userCurrency) ?></span>
+          <span style="font-weight: 500; opacity: 0.85;">Balance:</span>
+          <span style="font-weight: 800;">₹<?= number_format((float)$user['balance'], 2) ?></span>
         </div>
 
         <a href="/add-funds" class="btn btn-primary btn-sm" id="topbar_add_funds_btn">+ Add Funds</a>

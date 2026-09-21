@@ -12,7 +12,15 @@ $services = DB::fetchAll(
      ORDER BY id ASC"
 );
 
-$selectedCategory = (int)($_GET['category'] ?? ($categories[0]['id'] ?? 0));
+$selectedServiceId = (int)($_GET['service'] ?? 0);
+if ($selectedServiceId > 0) {
+    foreach ($services as $srvItem) {
+        if ((int)$srvItem['id'] === $selectedServiceId) {
+            $selectedCategory = (int)$srvItem['category_id'];
+            break;
+        }
+    }
+}
 ?>
 
 <div class="grid grid-cols-3" style="align-items: start;">
@@ -21,8 +29,9 @@ $selectedCategory = (int)($_GET['category'] ?? ($categories[0]['id'] ?? 0));
     <div class="card-header">
       <div>
         <h3 class="card-title">Place a New Order</h3>
-        <p class="card-subtitle">Real-time price calculation in your preferred currency (<?= e($userCurrency['code']) ?>)</p>
+        <p class="card-subtitle">Real-time instant price calculation in Indian Rupees (INR - ₹)</p>
       </div>
+      <div class="badge badge-completed">Instant Delivery</div>
     </div>
 
     <?php if (empty($services)): ?>
@@ -71,11 +80,11 @@ $selectedCategory = (int)($_GET['category'] ?? ($categories[0]['id'] ?? 0));
           <div class="item-card-row">
             <span style="font-weight: 600; color: var(--text-main);">Total Charge:</span>
             <span id="order_total_price" style="font-size: 1.5rem; font-weight: 800; color: var(--primary-rose);">
-              <?= e($userCurrency['symbol']) ?>0.00
+              ₹0.00
             </span>
           </div>
           <div style="font-size: 0.8125rem; color: var(--text-muted); margin-top: 0.25rem;">
-            Calculated at 1 USD = <?= number_format($userCurrency['rate'], 4) ?> <?= e($userCurrency['code']) ?>
+            Direct instant deduction from your INR wallet balance
           </div>
         </div>
 
@@ -106,12 +115,12 @@ $selectedCategory = (int)($_GET['category'] ?? ($categories[0]['id'] ?? 0));
       <div class="card-body">
         <div class="item-card-row" style="margin-bottom: 0.5rem;">
           <span style="font-size: 0.875rem; color: var(--text-muted);">Available:</span>
-          <span style="font-weight: 700; color: var(--primary-rose);"><?= Currency::format((float)$user['balance'], $userCurrency) ?></span>
+          <span style="font-weight: 800; color: var(--primary-rose);">₹<?= number_format((float)$user['balance'], 2) ?></span>
         </div>
         <p style="font-size: 0.8125rem; color: var(--text-muted); margin-bottom: 1rem;">
-          Funds are deducted in real-time. If your balance is low, please add funds before submitting.
+          Funds are deducted in real-time in INR.
         </p>
-        <a href="/add-funds" class="btn btn-secondary btn-sm btn-block">Add Funds to Wallet</a>
+        <a href="/add-funds" class="btn btn-secondary btn-sm btn-block">+ Add Funds to Wallet</a>
       </div>
     </div>
   </div>
@@ -119,6 +128,9 @@ $selectedCategory = (int)($_GET['category'] ?? ($categories[0]['id'] ?? 0));
 
 <script>
   window.smmServices = <?= json_encode($services, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+  window.userCurrencySymbol = '₹';
+  window.userCurrencyRate = 1.0;
+  window.preselectedServiceId = <?= $selectedServiceId ?>;
 </script>
 
 <?php require __DIR__ . '/footer.php'; ?>

@@ -202,7 +202,7 @@ switch ($requestUri) {
         }
 
         $ratePer1000 = (float)$service['rate'];
-        $costUsd = round(($ratePer1000 / 1000) * $quantity, 4);
+        $costInr = round(($ratePer1000 / 1000) * $quantity, 4);
 
         try {
             DB::beginTransaction();
@@ -210,32 +210,27 @@ switch ($requestUri) {
             $userRow = DB::fetch("SELECT id, balance FROM users WHERE id = ? FOR UPDATE", [$userId]);
             $currentBalance = (float)$userRow['balance'];
 
-            if ($currentBalance < $costUsd) {
+            if ($currentBalance < $costInr) {
                 DB::rollBack();
-                flash_set('error', 'Insufficient balance. Please add funds to your wallet before placing this order.');
+                flash_set('error', 'Insufficient balance. Please add funds via Razorpay (UPI) to your wallet before placing this order.');
                 redirect('/add-funds');
             }
 
-            $balanceAfter = round($currentBalance - $costUsd, 4);
+            $balanceAfter = round($currentBalance - $costInr, 4);
             DB::query("UPDATE users SET balance = ? WHERE id = ?", [$balanceAfter, $userId]);
 
-            // Save order snapshot
-            $userCurrency = Currency::getUserCurrency($user);
-            $snapshot = Currency::createPricingSnapshot($ratePer1000, $quantity, $userCurrency);
-
+            // Save order snapshot in INR
             DB::query(
                 "INSERT INTO orders (user_id, service_id, provider_id, link, quantity, charge, charge_currency, currency_rate, user_charge, status)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')",
+                 VALUES (?, ?, ?, ?, ?, ?, 'INR', 1.000000, ?, 'pending')",
                 [
                     $userId,
                     $service['id'],
                     $service['provider_id'] ?: null,
                     $link,
                     $quantity,
-                    $costUsd,
-                    $snapshot['charge_currency'],
-                    $snapshot['currency_rate'],
-                    $snapshot['user_charge']
+                    $costInr,
+                    $costInr
                 ]
             );
 
@@ -245,7 +240,7 @@ switch ($requestUri) {
             DB::query(
                 "INSERT INTO transactions (user_id, amount, balance_before, balance_after, type, reference_id, description)
                  VALUES (?, ?, ?, ?, 'order', ?, ?)",
-                [$userId, $costUsd, $currentBalance, $balanceAfter, (string)$orderId, "Order #{$orderId} for {$service['name']}"]
+                [$userId, $costInr, $currentBalance, $balanceAfter, (string)$orderId, "Order #{$orderId} for {$service['name']}"]
             );
 
             // Attempt automated dispatch to provider
@@ -291,16 +286,14 @@ switch ($requestUri) {
         verify_csrf();
 
         $userId = Auth::id();
-        $user = Auth::user();
-        $userCurrency = Currency::getUserCurrency($user);
-        $amountUsd = (float)($_POST['amount'] ?? 0);
+        $amountInr = (float)($_POST['amount'] ?? 0);
 
-        if ($amountUsd < 1.0) {
-            json_response(['success' => false, 'message' => 'Minimum deposit is $1.00.'], 400);
+        if ($amountInr < 10.0) {
+            json_response(['success' => false, 'message' => 'Minimum deposit is ₹10.00 INR.'], 400);
         }
 
         $gateway = new RazorpayGateway();
-        $orderRes = $gateway->createOrder($userId, $amountUsd, $userCurrency['code'], (float)$userCurrency['rate']);
+        $orderRes = $gateway->createOrder($userId, $amountInr);
         json_response($orderRes);
         exit;
 
@@ -316,13 +309,26 @@ switch ($requestUri) {
         $gateway = new RazorpayGateway();
         $verifyRes = $gateway->verifyPayment($userId, $orderId, $paymentId, $signature);
         if ($verifyRes['success']) {
-            flash_set('success', 'Payment verified! Your wallet has been credited.');
+            flash_set('success', $verifyRes['message']);
         }
         json_response($verifyRes);
         exit;
 
+    case '/payment/razorpay/webhook':
+        $rawPayload = file_get_contents('php://input');
+        $signature = $_SERVER['HTTP_X_RAZORPAY_SIGNATURE'] ?? '';
+        $gateway = new RazorpayGateway();
+        $webhookRes = $gateway->handleWebhook($rawPayload, $signature);
+        json_response($webhookRes);
+        exit;
+
     case '/tickets':
         require __DIR__ . '/themes/classic/views/user/tickets.php';
+        exit;
+
+    case '/affiliates':
+    case '/referrals':
+        require __DIR__ . '/themes/classic/views/user/affiliates.php';
         exit;
 
     case '/tickets/create':
@@ -763,21 +769,190 @@ switch ($requestUri) {
         $provSrvId = trim($_POST['provider_service_id'] ?? '');
         $name = trim($_POST['name'] ?? '');
         $catId = (int)($_POST['category_id'] ?? 0);
+        $catName = trim($_POST['category_name'] ?? '');
         $originalRate = (float)($_POST['original_rate'] ?? 0);
         $marginPercent = (float)($_POST['margin_percent'] ?? 30);
         $min = (int)($_POST['min_quantity'] ?? 10);
         $max = (int)($_POST['max_quantity'] ?? 10000);
-        $type = trim($_POST['type'] ?? 'default');
+        $type = trim($_POST['type'] ?? 'Default');
+        $desc = trim($_POST['description'] ?? '');
 
-        $finalRate = round($originalRate * (1 + ($marginPercent / 100)), 4);
+        if ($provId <= 0 || empty($provSrvId) || empty($name)) {
+            flash_set('error', 'Invalid provider service data submitted.');
+            redirect('/admin/provider-services' . ($provId > 0 ? '?provider_id=' . $provId : ''));
+            exit;
+        }
 
-        DB::query(
-            "INSERT INTO services (category_id, provider_id, provider_service_id, name, type, rate, original_rate, min_quantity, max_quantity, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')",
-            [$catId, $provId, $provSrvId, $name, $type, $finalRate, $originalRate, $min, $max]
-        );
+        try {
+            $provider = DB::fetch("SELECT * FROM providers WHERE id = ? LIMIT 1", [$provId]);
+            if (!$provider) {
+                throw new Exception("Selected provider was not found.");
+            }
 
-        flash_set('success', "Service '{$name}' imported with {$marginPercent}% margin at $" . number_format($finalRate, 4) . "/1K.");
+            // Ensure category exists or auto-create it safely
+            if ($catId > 0) {
+                $catExists = DB::fetch("SELECT id FROM categories WHERE id = ? LIMIT 1", [$catId]);
+                if (!$catExists) {
+                    $catId = 0;
+                }
+            }
+            if ($catId <= 0) {
+                $categoryToUse = !empty($catName) ? $catName : 'General Services';
+                $foundCat = DB::fetch("SELECT id FROM categories WHERE name = ? LIMIT 1", [$categoryToUse]);
+                if ($foundCat) {
+                    $catId = (int)$foundCat['id'];
+                } else {
+                    DB::query("INSERT INTO categories (name, sort_order, status, icon) VALUES (?, 10, 'active', 'folder')", [$categoryToUse]);
+                    $catId = (int)DB::lastInsertId();
+                }
+            }
+
+            // Provider currency conversion to INR
+            $provCurrency = strtoupper(trim($provider['currency'] ?? 'USD'));
+            $convertedOriginalRate = $originalRate;
+            if ($provCurrency === 'USD') {
+                $usdToInr = (float)get_setting('usd_to_inr_rate', '90.00');
+                if ($usdToInr <= 0) $usdToInr = 90.0;
+                $convertedOriginalRate = round($originalRate * $usdToInr, 4);
+            }
+
+            $finalRate = round($convertedOriginalRate * (1 + ($marginPercent / 100)), 4);
+
+            // Duplicate Prevention: Check if already imported
+            $existing = DB::fetch(
+                "SELECT id, name FROM services WHERE provider_id = ? AND provider_service_id = ? LIMIT 1",
+                [$provId, $provSrvId]
+            );
+
+            if ($existing) {
+                DB::query(
+                    "UPDATE services SET name = ?, category_id = ?, type = ?, rate = ?, original_rate = ?, min_quantity = ?, max_quantity = ?, description = ?, status = 'active' WHERE id = ?",
+                    [$name, $catId, $type, $finalRate, $convertedOriginalRate, $min, $max, $desc, $existing['id']]
+                );
+                flash_set('success', "Service updated in catalog: '{$name}' (ID #{$existing['id']}) at ₹" . number_format($finalRate, 2) . "/1K with {$marginPercent}% margin.");
+            } else {
+                DB::query(
+                    "INSERT INTO services (category_id, provider_id, provider_service_id, name, type, rate, original_rate, min_quantity, max_quantity, description, status)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')",
+                    [$catId, $provId, $provSrvId, $name, $type, $finalRate, $convertedOriginalRate, $min, $max, $desc]
+                );
+                $newId = DB::lastInsertId();
+                flash_set('success', "Service '{$name}' imported successfully into catalog (ID #{$newId}) at ₹" . number_format($finalRate, 2) . "/1K with {$marginPercent}% margin.");
+            }
+        } catch (\Throwable $e) {
+            error_log("Service Import Error: " . $e->getMessage());
+            flash_set('error', 'Import error: ' . $e->getMessage());
+        }
+
+        redirect('/admin/provider-services?provider_id=' . $provId);
+        exit;
+
+    case '/admin/provider-services/bulk-import':
+        Auth::requireAdmin();
+        verify_csrf();
+
+        $provId = (int)($_POST['provider_id'] ?? 0);
+        $marginPercent = (float)($_POST['margin_percent'] ?? 30);
+        $filterCategory = trim($_POST['filter_category'] ?? '');
+
+        if ($provId <= 0) {
+            flash_set('error', 'Please select a valid provider.');
+            redirect('/admin/provider-services');
+            exit;
+        }
+
+        $providerObj = SMMProvider::find($provId);
+        if (!$providerObj) {
+            flash_set('error', 'Provider not found.');
+            redirect('/admin/providers');
+            exit;
+        }
+
+        $providerData = DB::fetch("SELECT * FROM providers WHERE id = ?", [$provId]);
+        $provCurrency = strtoupper(trim($providerData['currency'] ?? 'USD'));
+        $usdToInr = (float)get_setting('usd_to_inr_rate', '90.00');
+        if ($usdToInr <= 0) $usdToInr = 90.0;
+
+        $res = $providerObj->getServices();
+        if (!$res['success'] || !is_array($res['services'])) {
+            flash_set('error', 'Failed to fetch services from provider: ' . ($res['error'] ?? 'Unknown API error.'));
+            redirect('/admin/provider-services?provider_id=' . $provId);
+            exit;
+        }
+
+        $servicesList = $res['services'];
+        $importedCount = 0;
+        $updatedCount = 0;
+        $skippedCount = 0;
+
+        try {
+            DB::beginTransaction();
+
+            foreach ($servicesList as $ps) {
+                if (!is_array($ps) || empty($ps['service']) || empty($ps['name'])) {
+                    $skippedCount++;
+                    continue;
+                }
+
+                $provCat = trim($ps['category'] ?? 'General');
+                if (!empty($filterCategory) && $filterCategory !== 'all' && strcasecmp($provCat, $filterCategory) !== 0) {
+                    continue;
+                }
+
+                // Auto-resolve or create category
+                $cat = DB::fetch("SELECT id FROM categories WHERE name = ? LIMIT 1", [$provCat]);
+                if ($cat) {
+                    $catId = (int)$cat['id'];
+                } else {
+                    DB::query("INSERT INTO categories (name, sort_order, status, icon) VALUES (?, 10, 'active', 'folder')", [$provCat]);
+                    $catId = (int)DB::lastInsertId();
+                }
+
+                $provSrvId = (string)$ps['service'];
+                $srvName = trim($ps['name']);
+                $origRate = (float)($ps['rate'] ?? 0);
+                $min = (int)($ps['min'] ?? 10);
+                $max = (int)($ps['max'] ?? 10000);
+                $type = trim($ps['type'] ?? 'Default');
+                $desc = trim($ps['desc'] ?? '');
+
+                // Currency conversion
+                $convertedCost = $origRate;
+                if ($provCurrency === 'USD') {
+                    $convertedCost = round($origRate * $usdToInr, 4);
+                }
+                $finalRate = round($convertedCost * (1 + ($marginPercent / 100)), 4);
+
+                // Duplicate prevention: Update if exists, Insert if new
+                $existing = DB::fetch(
+                    "SELECT id FROM services WHERE provider_id = ? AND provider_service_id = ? LIMIT 1",
+                    [$provId, $provSrvId]
+                );
+
+                if ($existing) {
+                    DB::query(
+                        "UPDATE services SET name = ?, category_id = ?, type = ?, rate = ?, original_rate = ?, min_quantity = ?, max_quantity = ?, description = ?, status = 'active' WHERE id = ?",
+                        [$srvName, $catId, $type, $finalRate, $convertedCost, $min, $max, $desc, $existing['id']]
+                    );
+                    $updatedCount++;
+                } else {
+                    DB::query(
+                        "INSERT INTO services (category_id, provider_id, provider_service_id, name, type, rate, original_rate, min_quantity, max_quantity, description, status)
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')",
+                        [$catId, $provId, $provSrvId, $srvName, $type, $finalRate, $convertedCost, $min, $max, $desc]
+                    );
+                    $importedCount++;
+                }
+            }
+
+            DB::commit();
+            flash_set('success', "Bulk Import Complete: {$importedCount} new services added, {$updatedCount} updated, {$skippedCount} skipped.");
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            error_log("Bulk import failure: " . $e->getMessage());
+            flash_set('error', 'Bulk import transaction failed: ' . $e->getMessage());
+        }
+
         redirect('/admin/provider-services?provider_id=' . $provId);
         exit;
 

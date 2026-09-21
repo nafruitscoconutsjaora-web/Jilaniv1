@@ -63,9 +63,9 @@ $categories = DB::fetchAll("SELECT * FROM categories WHERE status = 'active' ORD
             <span style="font-size: 0.8125rem; color: var(--text-muted);">ID: #<?= $srv['id'] ?></span>
           </div>
 
-          <!-- Converted Price in User's Preferred Currency -->
+          <!-- Converted Price in INR -->
           <div style="font-size: 1.125rem; font-weight: 800; color: var(--primary-rose);">
-            <?= Currency::format((float)$srv['rate'], $userCurrency) ?> 
+            ₹<?= number_format((float)$srv['rate'], 2) ?> 
             <span style="font-size: 0.8125rem; font-weight: 500; color: var(--text-muted);">/ 1,000</span>
           </div>
         </div>
@@ -86,8 +86,8 @@ $categories = DB::fetchAll("SELECT * FROM categories WHERE status = 'active' ORD
             <span class="meta-val"><?= number_format($srv['max_quantity']) ?></span>
           </div>
           <div class="meta-box">
-            <span class="meta-label">Base Rate (USD)</span>
-            <span class="meta-val">$<?= number_format($srv['rate'], 4) ?></span>
+            <span class="meta-label">Wholesale Rate</span>
+            <span class="meta-val" style="color: var(--primary-rose); font-weight: 700;">₹<?= number_format((float)$srv['rate'], 2) ?></span>
           </div>
         </div>
 
