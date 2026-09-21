@@ -39,6 +39,12 @@ $siteName = e(get_setting('site_name', 'Rose SMM Panel'));
     <a href="/admin/payments" class="nav-link <?= $currentPage === 'admin_payments' ? 'active' : '' ?>" id="admin_link_payments">
       Payments & Ledger
     </a>
+    <a href="/admin/payment-gateways" class="nav-link <?= $currentPage === 'admin_gateways' ? 'active' : '' ?>" id="admin_link_gateways">
+      Payment Gateways
+    </a>
+    <a href="/admin/banners" class="nav-link <?= $currentPage === 'admin_banners' ? 'active' : '' ?>" id="admin_link_banners">
+      Hero Banners
+    </a>
     <a href="/admin/tickets" class="nav-link <?= $currentPage === 'admin_tickets' ? 'active' : '' ?>" id="admin_link_tickets">
       Support Tickets
     </a>

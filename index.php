@@ -291,17 +291,19 @@ switch ($requestUri) {
         verify_csrf();
 
         $userId = Auth::id();
-        $user = Auth::user();
-        $userCurrency = Currency::getUserCurrency($user);
-        $amountUsd = (float)($_POST['amount'] ?? 0);
-
-        if ($amountUsd < 1.0) {
-            json_response(['success' => false, 'message' => 'Minimum deposit is $1.00.'], 400);
-        }
+        $amountInr = (float)($_POST['amount'] ?? 0);
 
         $gateway = new RazorpayGateway();
-        $orderRes = $gateway->createOrder($userId, $amountUsd, $userCurrency['code'], (float)$userCurrency['rate']);
-        json_response($orderRes);
+        if (!$gateway->isEnabled()) {
+            json_response(['success' => false, 'message' => 'Razorpay payment gateway is currently disabled by administrator.'], 400);
+        }
+
+        if ($amountInr < $gateway->getMinAmount()) {
+            json_response(['success' => false, 'message' => 'Minimum deposit is ₹' . number_format($gateway->getMinAmount(), 2) . ' INR.'], 400);
+        }
+
+        $orderRes = $gateway->createOrder($userId, $amountInr);
+        json_response($orderRes, $orderRes['success'] ? 200 : 400);
         exit;
 
     case '/payment/razorpay/verify':
@@ -313,12 +315,33 @@ switch ($requestUri) {
         $paymentId = trim($_POST['razorpay_payment_id'] ?? '');
         $signature = trim($_POST['razorpay_signature'] ?? '');
 
+        if (empty($orderId) || empty($paymentId) || empty($signature)) {
+            json_response(['success' => false, 'message' => 'Incomplete payment response received.'], 400);
+        }
+
         $gateway = new RazorpayGateway();
         $verifyRes = $gateway->verifyPayment($userId, $orderId, $paymentId, $signature);
         if ($verifyRes['success']) {
-            flash_set('success', 'Payment verified! Your wallet has been credited.');
+            flash_set('success', 'Payment verified successfully! Your wallet balance has been credited.');
         }
-        json_response($verifyRes);
+        json_response($verifyRes, $verifyRes['success'] ? 200 : 400);
+        exit;
+
+    case '/payment/razorpay/webhook':
+        $rawPayload = file_get_contents('php://input');
+        $webhookSignature = $_SERVER['HTTP_X_RAZORPAY_SIGNATURE'] ?? '';
+
+        if (empty($rawPayload) || empty($webhookSignature)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'message' => 'Missing payload or signature.']);
+            exit;
+        }
+
+        $gateway = new RazorpayGateway();
+        $res = $gateway->verifyWebhook($rawPayload, $webhookSignature);
+        http_response_code($res['success'] ? 200 : 400);
+        header('Content-Type: application/json');
+        echo json_encode($res);
         exit;
 
     case '/tickets':
@@ -868,6 +891,227 @@ switch ($requestUri) {
 
     case '/admin/finance':
         require __DIR__ . '/themes/classic/views/admin/finance.php';
+        exit;
+
+    case '/admin/payment-gateways':
+        Auth::requireAdmin();
+        require __DIR__ . '/themes/classic/views/admin/payment_gateways.php';
+        exit;
+
+    case '/admin/payment-gateways/update':
+        Auth::requireAdmin();
+        verify_csrf();
+
+        $gwId = (int)($_POST['gateway_id'] ?? 0);
+        $minAmount = max(1.0, (float)($_POST['min_amount'] ?? 10.0));
+        $maxAmount = max($minAmount, (float)($_POST['max_amount'] ?? 50000.0));
+        $instructions = trim($_POST['instructions'] ?? '');
+        $isEnabled = (int)($_POST['is_enabled'] ?? 0);
+        $configData = $_POST['config'] ?? [];
+
+        $gw = DB::fetch("SELECT * FROM payment_gateways WHERE id = ?", [$gwId]);
+        if (!$gw) {
+            flash_set('danger', 'Payment gateway not found.');
+            redirect('/admin/payment-gateways');
+            exit;
+        }
+
+        $existingConfig = !empty($gw['config']) ? json_decode($gw['config'], true) : [];
+        if (!is_array($existingConfig)) {
+            $existingConfig = [];
+        }
+
+        // Merge incoming config
+        foreach ($configData as $k => $v) {
+            $existingConfig[$k] = trim($v);
+        }
+
+        DB::query(
+            "UPDATE payment_gateways SET min_amount = ?, max_amount = ?, instructions = ?, is_enabled = ?, config = ?, updated_at = NOW() WHERE id = ?",
+            [$minAmount, $maxAmount, $instructions, $isEnabled, json_encode($existingConfig), $gwId]
+        );
+
+        // Sync with legacy settings table for backward compatibility if razorpay
+        if ($gw['code'] === 'razorpay') {
+            set_setting('razorpay_enabled', (string)$isEnabled);
+            if (isset($existingConfig['key_id'])) {
+                set_setting('razorpay_key_id', $existingConfig['key_id']);
+            }
+            if (isset($existingConfig['key_secret'])) {
+                set_setting('razorpay_key_secret', $existingConfig['key_secret']);
+            }
+            if (isset($existingConfig['webhook_secret'])) {
+                set_setting('razorpay_webhook_secret', $existingConfig['webhook_secret']);
+            }
+        }
+
+        flash_set('success', "Payment gateway '{$gw['name']}' updated successfully.");
+        redirect('/admin/payment-gateways');
+        exit;
+
+    case '/admin/payment-gateways/toggle':
+        Auth::requireAdmin();
+        verify_csrf();
+
+        $gwId = (int)($_POST['gateway_id'] ?? 0);
+        $gw = DB::fetch("SELECT * FROM payment_gateways WHERE id = ?", [$gwId]);
+        if ($gw) {
+            $newStatus = $gw['is_enabled'] ? 0 : 1;
+            DB::query("UPDATE payment_gateways SET is_enabled = ?, updated_at = NOW() WHERE id = ?", [$newStatus, $gwId]);
+            if ($gw['code'] === 'razorpay') {
+                set_setting('razorpay_enabled', (string)$newStatus);
+            }
+            flash_set('success', "Gateway status updated.");
+        }
+        redirect('/admin/payment-gateways');
+        exit;
+
+    case '/admin/banners':
+        Auth::requireAdmin();
+        require __DIR__ . '/themes/classic/views/admin/banners.php';
+        exit;
+
+    case '/admin/banners/create':
+        Auth::requireAdmin();
+        verify_csrf();
+
+        $heading = trim($_POST['heading'] ?? '');
+        $subheading = trim($_POST['subheading'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+        $ctaText = trim($_POST['cta_text'] ?? 'Explore Services');
+        $ctaLink = trim($_POST['cta_link'] ?? '/new-order');
+        $sortOrder = (int)($_POST['sort_order'] ?? 1);
+        $isActive = (int)($_POST['is_active'] ?? 1);
+
+        if (empty($heading) || empty($description)) {
+            flash_set('danger', 'Heading and description are required.');
+            redirect('/admin/banners');
+            exit;
+        }
+
+        $imageUrl = '';
+        if (!empty($_FILES['banner_image']['tmp_name']) && $_FILES['banner_image']['error'] === UPLOAD_ERR_OK) {
+            $file = $_FILES['banner_image'];
+            $maxSize = 4 * 1024 * 1024; // 4MB
+            if ($file['size'] > $maxSize) {
+                flash_set('danger', 'Uploaded image exceeds 4MB limit.');
+                redirect('/admin/banners');
+                exit;
+            }
+
+            $finfo = finfo_open(FILEINFO_MIME_TYPE);
+            $mimeType = finfo_file($finfo, $file['tmp_name']);
+            finfo_close($finfo);
+
+            $allowedMimes = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
+            if (!isset($allowedMimes[$mimeType])) {
+                flash_set('danger', 'Invalid file type. Only JPG, PNG, and WebP images are permitted.');
+                redirect('/admin/banners');
+                exit;
+            }
+
+            $ext = $allowedMimes[$mimeType];
+            $filename = 'banner_' . bin2hex(random_bytes(10)) . '.' . $ext;
+            $destDir = __DIR__ . '/uploads/banners';
+            if (!is_dir($destDir)) {
+                mkdir($destDir, 0755, true);
+            }
+            $targetPath = $destDir . '/' . $filename;
+            if (move_uploaded_file($file['tmp_name'], $targetPath)) {
+                $imageUrl = '/uploads/banners/' . $filename;
+            }
+        }
+
+        DB::query(
+            "INSERT INTO hero_banners (heading, subheading, description, cta_text, cta_link, image_url, sort_order, is_active)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+            [$heading, $subheading, $description, $ctaText, $ctaLink, $imageUrl, $sortOrder, $isActive]
+        );
+
+        flash_set('success', 'Hero banner created successfully.');
+        redirect('/admin/banners');
+        exit;
+
+    case '/admin/banners/update':
+        Auth::requireAdmin();
+        verify_csrf();
+
+        $bannerId = (int)($_POST['banner_id'] ?? 0);
+        $banner = DB::fetch("SELECT * FROM hero_banners WHERE id = ?", [$bannerId]);
+        if (!$banner) {
+            flash_set('danger', 'Hero banner not found.');
+            redirect('/admin/banners');
+            exit;
+        }
+
+        $heading = trim($_POST['heading'] ?? '');
+        $subheading = trim($_POST['subheading'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+        $ctaText = trim($_POST['cta_text'] ?? 'Explore Services');
+        $ctaLink = trim($_POST['cta_link'] ?? '/new-order');
+        $sortOrder = (int)($_POST['sort_order'] ?? 1);
+        $isActive = (int)($_POST['is_active'] ?? 1);
+
+        $imageUrl = $banner['image_url'];
+        if (!empty($_FILES['banner_image']['tmp_name']) && $_FILES['banner_image']['error'] === UPLOAD_ERR_OK) {
+            $file = $_FILES['banner_image'];
+            $maxSize = 4 * 1024 * 1024; // 4MB
+            if ($file['size'] <= $maxSize) {
+                $finfo = finfo_open(FILEINFO_MIME_TYPE);
+                $mimeType = finfo_file($finfo, $file['tmp_name']);
+                finfo_close($finfo);
+
+                $allowedMimes = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp'];
+                if (isset($allowedMimes[$mimeType])) {
+                    $ext = $allowedMimes[$mimeType];
+                    $filename = 'banner_' . bin2hex(random_bytes(10)) . '.' . $ext;
+                    $destDir = __DIR__ . '/uploads/banners';
+                    if (!is_dir($destDir)) {
+                        mkdir($destDir, 0755, true);
+                    }
+                    if (move_uploaded_file($file['tmp_name'], $destDir . '/' . $filename)) {
+                        $imageUrl = '/uploads/banners/' . $filename;
+                    }
+                }
+            }
+        }
+
+        DB::query(
+            "UPDATE hero_banners SET heading = ?, subheading = ?, description = ?, cta_text = ?, cta_link = ?, image_url = ?, sort_order = ?, is_active = ?, updated_at = NOW() WHERE id = ?",
+            [$heading, $subheading, $description, $ctaText, $ctaLink, $imageUrl, $sortOrder, $isActive, $bannerId]
+        );
+
+        flash_set('success', 'Hero banner updated successfully.');
+        redirect('/admin/banners');
+        exit;
+
+    case '/admin/banners/toggle':
+        Auth::requireAdmin();
+        verify_csrf();
+
+        $bannerId = (int)($_POST['banner_id'] ?? 0);
+        DB::query("UPDATE hero_banners SET is_active = NOT is_active, updated_at = NOW() WHERE id = ?", [$bannerId]);
+        flash_set('success', 'Banner display status toggled.');
+        redirect('/admin/banners');
+        exit;
+
+    case '/admin/banners/delete':
+        Auth::requireAdmin();
+        verify_csrf();
+
+        $bannerId = (int)($_POST['banner_id'] ?? 0);
+        $banner = DB::fetch("SELECT * FROM hero_banners WHERE id = ?", [$bannerId]);
+        if ($banner) {
+            if (!empty($banner['image_url']) && str_starts_with($banner['image_url'], '/uploads/banners/')) {
+                $filePath = __DIR__ . $banner['image_url'];
+                if (file_exists($filePath)) {
+                    @unlink($filePath);
+                }
+            }
+            DB::query("DELETE FROM hero_banners WHERE id = ?", [$bannerId]);
+            flash_set('success', 'Hero banner deleted.');
+        }
+        redirect('/admin/banners');
         exit;
 
     case '/admin/settings':
