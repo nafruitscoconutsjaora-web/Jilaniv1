@@ -4,7 +4,7 @@
  * Matches Rose + White reference image design (70692DF5-E0CE-4C17-B77E-0FB36661524C)
  */
 $user = Auth::user();
-$activeCurrencies = Currency::getActive();
+$activeCurrencies = Currency::getAllActive();
 $userCurrency = Currency::getUserCurrency($user);
 $siteName = e(get_setting('site_name', 'RoseSMM'));
 ?>
