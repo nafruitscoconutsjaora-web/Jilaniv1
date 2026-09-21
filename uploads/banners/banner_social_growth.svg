@@ -1,0 +1,151 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 380" width="1200" height="380">
+  <defs>
+    <!-- Background Gradient: Premium Rose + Ruby + Soft Glow -->
+    <linearGradient id="bgGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4c0519"/>
+      <stop offset="40%" stop-color="#881337"/>
+      <stop offset="80%" stop-color="#be123c"/>
+      <stop offset="100%" stop-color="#e11d48"/>
+    </linearGradient>
+
+    <!-- Accent Highlights -->
+    <linearGradient id="roseAccent" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fb7185"/>
+      <stop offset="50%" stop-color="#fda4af"/>
+      <stop offset="100%" stop-color="#ffffff"/>
+    </linearGradient>
+
+    <linearGradient id="goldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="50%" stop-color="#facc15"/>
+      <stop offset="100%" stop-color="#ca8a04"/>
+    </linearGradient>
+
+    <linearGradient id="igGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="25%" stop-color="#f43f5e"/>
+      <stop offset="60%" stop-color="#d946ef"/>
+      <stop offset="100%" stop-color="#8b5cf6"/>
+    </linearGradient>
+
+    <!-- Filters for Gloss and Shadow -->
+    <filter id="shadow1" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+    
+    <filter id="glowPink" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="12" flood-color="#fb7185" flood-opacity="0.6"/>
+    </filter>
+  </defs>
+
+  <!-- Base Card Background with 16px corner radius -->
+  <rect width="1200" height="380" rx="16" fill="url(#bgGrad1)"/>
+
+  <!-- Decorative Ambient Geometric Light Bubbles -->
+  <circle cx="1080" cy="90" r="220" fill="#f43f5e" opacity="0.25" filter="url(#glowPink)"/>
+  <circle cx="750" cy="340" r="160" fill="#fda4af" opacity="0.15"/>
+  <circle cx="120" cy="-20" r="180" fill="#fda4af" opacity="0.12"/>
+
+  <!-- Subtle High-Tech Hex / Dot Grid Pattern (Right Section) -->
+  <g opacity="0.15" fill="#ffffff">
+    <circle cx="700" cy="50" r="3"/><circle cx="740" cy="50" r="3"/><circle cx="780" cy="50" r="3"/><circle cx="820" cy="50" r="3"/>
+    <circle cx="700" cy="90" r="3"/><circle cx="740" cy="90" r="3"/><circle cx="780" cy="90" r="3"/><circle cx="820" cy="90" r="3"/>
+    <circle cx="700" cy="130" r="3"/><circle cx="740" cy="130" r="3"/><circle cx="780" cy="130" r="3"/><circle cx="820" cy="130" r="3"/>
+    <circle cx="700" cy="170" r="3"/><circle cx="740" cy="170" r="3"/><circle cx="780" cy="170" r="3"/><circle cx="820" cy="170" r="3"/>
+  </g>
+
+  <!-- Left Content Column -->
+  <!-- Top Badge Pill -->
+  <g transform="translate(60, 48)">
+    <rect width="250" height="36" rx="18" fill="rgba(255, 255, 255, 0.15)" stroke="rgba(255, 255, 255, 0.3)" stroke-width="1.5"/>
+    <circle cx="20" cy="18" r="6" fill="#4ade80" filter="url(#glowPink)"/>
+    <text x="36" y="23" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" letter-spacing="1">INSTANT DISPATCH 24/7</text>
+  </g>
+
+  <!-- Main Headline -->
+  <text x="60" y="142" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="44" font-weight="900" letter-spacing="-0.5">
+    SUPERCHARGE YOUR
+  </text>
+  <text x="60" y="196" fill="url(#roseAccent)" font-family="system-ui, -apple-system, sans-serif" font-size="44" font-weight="900" letter-spacing="-0.5">
+    SOCIAL MEDIA PRESENCE
+  </text>
+
+  <!-- Subheading / Features List -->
+  <text x="60" y="240" fill="#ffe4e6" font-family="system-ui, -apple-system, sans-serif" font-size="17" font-weight="500">
+    ⚡ High-Speed Delivery • 🔒 Safe &amp; Drop-Protected • 💎 100% Guaranteed High-Retention
+  </text>
+
+  <!-- Graphic CTA Button inside banner -->
+  <g transform="translate(60, 276)">
+    <rect width="210" height="52" rx="12" fill="#ffffff" filter="url(#shadow1)"/>
+    <text x="32" y="32" fill="#e11d48" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="800" letter-spacing="0.5">ORDER SERVICES</text>
+    <path d="M174 26 L166 20 L166 32 Z" fill="#e11d48"/>
+  </g>
+
+  <!-- Secondary Guarantee Badge -->
+  <g transform="translate(290, 284)">
+    <circle cx="20" cy="18" r="14" fill="rgba(255,255,255,0.18)"/>
+    <path d="M14 18 L18 22 L26 14" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="44" y="23" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700">Verified Quality</text>
+  </g>
+
+  <!-- RIGHT SIDE: 3D Floating Social Cards & Graphic Elements -->
+  <!-- 3D Platform Card -->
+  <g transform="translate(820, 50)" filter="url(#shadow1)">
+    <!-- Base Card -->
+    <rect width="320" height="280" rx="20" fill="#ffffff" fill-opacity="0.96"/>
+    
+    <!-- Top Card Bar -->
+    <rect x="24" y="24" width="140" height="12" rx="6" fill="#f43f5e" opacity="0.8"/>
+    <rect x="24" y="44" width="80" height="8" rx="4" fill="#cbd5e1"/>
+    <rect x="230" y="20" width="66" height="28" rx="14" fill="#ecfdf5"/>
+    <text x="243" y="38" fill="#059669" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="800">LIVE 99.9%</text>
+
+    <!-- Stat Metric Chart Line -->
+    <path d="M28 200 C 90 190, 140 140, 190 145 C 240 150, 270 95, 292 85" fill="none" stroke="#e11d48" stroke-width="4.5" stroke-linecap="round"/>
+    <path d="M28 200 C 90 190, 140 140, 190 145 C 240 150, 270 95, 292 85 L 292 230 L 28 230 Z" fill="url(#roseAccent)" opacity="0.25"/>
+
+    <!-- Chart Nodes -->
+    <circle cx="190" cy="145" r="6" fill="#ffffff" stroke="#e11d48" stroke-width="3"/>
+    <circle cx="292" cy="85" r="7" fill="#e11d48" stroke="#ffffff" stroke-width="3"/>
+
+    <!-- Bottom Metrics Row inside Card -->
+    <rect x="24" y="235" width="80" height="24" rx="6" fill="#f8fafc"/>
+    <text x="32" y="251" fill="#475569" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="700">VIEWS +500K</text>
+
+    <rect x="115" y="235" width="80" height="24" rx="6" fill="#f8fafc"/>
+    <text x="123" y="251" fill="#475569" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="700">LIKES +120K</text>
+
+    <rect x="205" y="235" width="90" height="24" rx="6" fill="#fff1f2"/>
+    <text x="214" y="251" fill="#e11d48" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="800">REACH 10X</text>
+  </g>
+
+  <!-- Floating Instagram Glass Badge -->
+  <g transform="translate(760, 40)" filter="url(#shadow1)">
+    <rect width="76" height="76" rx="20" fill="url(#igGradient)"/>
+    <rect x="18" y="18" width="40" height="40" rx="10" fill="none" stroke="#ffffff" stroke-width="3.5"/>
+    <circle cx="38" cy="38" r="9" fill="none" stroke="#ffffff" stroke-width="3.5"/>
+    <circle cx="48" cy="28" r="3" fill="#ffffff"/>
+  </g>
+
+  <!-- Floating TikTok Badge -->
+  <g transform="translate(730, 180)" filter="url(#shadow1)">
+    <rect width="68" height="68" rx="18" fill="#000000"/>
+    <path d="M38 22 C 41 27, 46 29, 50 30 L 50 36 C 45 36, 41 33, 38 31 L 38 43 C 38 49, 33 53, 27 53 C 21 53, 16 48, 16 42 C 16 36, 21 31, 27 31 C 28 31, 30 31, 31 32 L 31 38 C 30 37, 28 37, 27 37 C 24 37, 22 39, 22 42 C 22 45, 24 47, 27 47 C 30 47, 32 45, 32 42 L 32 18 L 38 18 Z" fill="#25f4ee"/>
+    <path d="M40 24 C 43 29, 48 31, 52 32 L 52 37 C 47 37, 43 34, 40 32 L 40 44 C 40 50, 35 54, 29 54 C 23 54, 18 49, 18 43 C 18 37, 23 32, 29 32 C 30 32, 32 32, 33 33 L 33 39 C 32 38, 30 38, 29 38 C 26 38, 24 40, 24 43 C 24 46, 26 48, 29 48 C 32 48, 34 46, 34 43 L 34 19 L 40 19 Z" fill="#fe2c55" opacity="0.85"/>
+  </g>
+
+  <!-- Floating Floating YouTube Pill -->
+  <g transform="translate(1020, 260)" filter="url(#shadow1)">
+    <rect width="130" height="54" rx="27" fill="#ffffff" stroke="#fecdd3" stroke-width="2"/>
+    <rect x="14" y="13" width="38" height="28" rx="8" fill="#ff0000"/>
+    <polygon points="28,21 38,27 28,33" fill="#ffffff"/>
+    <text x="60" y="34" fill="#0f172a" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="800">4K VIEWS</text>
+  </g>
+
+  <!-- Sparkles -->
+  <g fill="#fef08a" opacity="0.9">
+    <path d="M680,100 L683,110 L693,113 L683,116 L680,126 L677,116 L667,113 L677,110 Z"/>
+    <path d="M1120,40 L1122,48 L1130,50 L1122,52 L1120,60 L1118,52 L1110,50 L1118,48 Z"/>
+  </g>
+</svg>

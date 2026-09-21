@@ -1,0 +1,117 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 380" width="1200" height="380">
+  <defs>
+    <!-- Background Gradient: YouTube Ruby / TikTok Cyber Cyan-Pink Deep Fusion -->
+    <linearGradient id="bgGrad3" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#18020a"/>
+      <stop offset="40%" stop-color="#4c0519"/>
+      <stop offset="80%" stop-color="#881337"/>
+      <stop offset="100%" stop-color="#be123c"/>
+    </linearGradient>
+
+    <linearGradient id="goldText" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="60%" stop-color="#facc15"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+
+    <linearGradient id="ytGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ff0000"/>
+      <stop offset="100%" stop-color="#b91c1c"/>
+    </linearGradient>
+
+    <filter id="shadow3" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.45"/>
+    </filter>
+
+    <filter id="glowCyan" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="10" flood-color="#22d3ee" flood-opacity="0.7"/>
+    </filter>
+  </defs>
+
+  <!-- Base Card Background -->
+  <rect width="1200" height="380" rx="16" fill="url(#bgGrad3)"/>
+
+  <!-- Background Decorative Glowing Lights -->
+  <circle cx="950" cy="190" r="260" fill="#e11d48" opacity="0.2"/>
+  <circle cx="1100" cy="60" r="140" fill="#22d3ee" opacity="0.12"/>
+  <circle cx="700" cy="320" r="160" fill="#f43f5e" opacity="0.14"/>
+
+  <!-- Left Content Column -->
+  <!-- Top Category Chip -->
+  <g transform="translate(60, 48)">
+    <rect width="270" height="36" rx="18" fill="rgba(255, 255, 255, 0.12)" stroke="#fecdd3" stroke-width="1.5"/>
+    <circle cx="20" cy="18" r="6" fill="#f59e0b"/>
+    <text x="36" y="23" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="700" letter-spacing="1">MONETIZATION PACKS</text>
+  </g>
+
+  <!-- Main Headline -->
+  <text x="60" y="142" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="44" font-weight="900" letter-spacing="-0.5">
+    YOUTUBE &amp; TIKTOK
+  </text>
+  <text x="60" y="196" fill="url(#goldText)" font-family="system-ui, -apple-system, sans-serif" font-size="44" font-weight="900" letter-spacing="-0.5">
+    WATCH TIME &amp; SUBSCRIBERS
+  </text>
+
+  <!-- Subtitle -->
+  <text x="60" y="240" fill="#ffe4e6" font-family="system-ui, -apple-system, sans-serif" font-size="17" font-weight="500">
+    🚀 Fast Monetization Eligibility • 🎯 Real Watch-Hours • 📈 Lifetime Non-Drop Guarantee
+  </text>
+
+  <!-- Graphic CTA Button -->
+  <g transform="translate(60, 276)">
+    <rect width="210" height="52" rx="12" fill="#ffffff" filter="url(#shadow3)"/>
+    <text x="32" y="32" fill="#b91c1c" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="800" letter-spacing="0.5">START GROWING</text>
+    <path d="M174 26 L166 20 L166 32 Z" fill="#b91c1c"/>
+  </g>
+
+  <!-- Partner Badge -->
+  <g transform="translate(290, 276)">
+    <rect width="200" height="52" rx="12" fill="rgba(255,255,255,0.12)" stroke="rgba(255,255,255,0.25)" stroke-width="1.5"/>
+    <text x="18" y="32" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700">🔒 100% Channel Safe</text>
+  </g>
+
+  <!-- RIGHT SIDE: Artwork Display -->
+  <!-- Main Studio Card -->
+  <g transform="translate(830, 50)" filter="url(#shadow3)">
+    <rect width="310" height="280" rx="20" fill="#ffffff"/>
+    
+    <!-- Channel Header -->
+    <rect x="24" y="24" width="46" height="46" rx="23" fill="url(#ytGradient)"/>
+    <polygon points="43,40 54,47 43,54" fill="#ffffff"/>
+
+    <text x="82" y="42" fill="#0f172a" font-family="system-ui, -apple-system, sans-serif" font-size="15" font-weight="800">CREATOR STUDIO</text>
+    <text x="82" y="58" fill="#16a34a" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="700">● MONETIZATION READY</text>
+
+    <!-- Watch Time Progress Bar -->
+    <rect x="24" y="90" width="262" height="66" rx="12" fill="#f8fafc" stroke="#e2e8f0"/>
+    <text x="38" y="112" fill="#64748b" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="700">WATCH HOURS COMPLETED</text>
+    <text x="38" y="138" fill="#0f172a" font-family="system-ui, -apple-system, sans-serif" font-size="20" font-weight="900">4,000 / 4,000</text>
+    
+    <rect x="180" y="114" width="90" height="26" rx="13" fill="#dcfce7"/>
+    <text x="194" y="131" fill="#15803d" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="800">100% GOAL</text>
+
+    <!-- Subscribers Row -->
+    <rect x="24" y="170" width="262" height="85" rx="12" fill="#fff1f2" stroke="#fecdd3"/>
+    <text x="38" y="196" fill="#9f1239" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="700">SUBSCRIBERS GAINED</text>
+    <text x="38" y="228" fill="#e11d48" font-family="system-ui, -apple-system, sans-serif" font-size="24" font-weight="900">+50,000</text>
+    <text x="175" y="228" fill="#881337" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="600">Active Audience</text>
+  </g>
+
+  <!-- Floating Play Button Badge -->
+  <g transform="translate(740, 110)" filter="url(#shadow3)">
+    <rect width="80" height="60" rx="16" fill="#ff0000"/>
+    <polygon points="34,20 54,30 34,40" fill="#ffffff"/>
+  </g>
+
+  <!-- Floating TikTok Viral Music Note -->
+  <g transform="translate(760, 220)" filter="url(#shadow3)">
+    <circle cx="32" cy="32" r="30" fill="#000000" stroke="#22d3ee" stroke-width="2" filter="url(#glowCyan)"/>
+    <path d="M34 20 L34 38 A 6 6 0 1 1 28 32 A 6 6 0 0 1 34 33 L34 24 L42 22 L42 27 L34 29" fill="#ffffff"/>
+  </g>
+
+  <!-- Sparkles -->
+  <g fill="#fef08a">
+    <polygon points="680,80 683,90 693,93 683,96 680,106 677,96 667,93 677,90"/>
+    <polygon points="1130,220 1133,228 1141,231 1133,234 1130,242 1127,234 1119,231 1127,228"/>
+  </g>
+</svg>

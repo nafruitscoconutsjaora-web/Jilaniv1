@@ -248,7 +248,9 @@ INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES
 INSERT INTO `users` (`username`, `email`, `password`, `role`, `balance`, `currency_code`, `api_key`, `status`) VALUES
 ('admin', 'admin@smmpanel.com', '$2y$10$JJzBQee0y09kTOMXEdUUz.HifgrwxZ5l1kNoRg1hQmCj5GCI803Ne', 'admin', 0.0000, 'USD', 'smm_adm_9f3b145a8e23f0c18d4512e7', 'active');
 
--- Default Active Hero Banner for User Dashboard
-INSERT INTO `hero_banners` (`id`, `heading`, `subheading`, `description`, `cta_text`, `cta_link`, `sort_order`, `is_active`) VALUES
-(1, 'Grow Your Social Media', 'Fast • Secure • Reliable', 'Get real engagement and boost your online presence with our premium SMM services.', 'Explore Services', '/new-order', 1, 1);
+-- Default Active Image Slider Banners for User Dashboard
+INSERT INTO `hero_banners` (`id`, `heading`, `subheading`, `description`, `cta_text`, `cta_link`, `image_url`, `sort_order`, `is_active`) VALUES
+(1, 'Boost Your Social Presence', 'Instant High-Quality Engagement', 'Supercharge your Instagram, TikTok, and YouTube with verified quality delivery.', 'Explore Services', '/new-order', '/uploads/banners/banner_social_growth.svg', 1, 1),
+(2, 'Instagram Reels & Follower Boost', 'Viral Growth 2026', 'Non-drop high retention Instagram followers, likes, and explore ranking.', 'Boost Account', '/new-order', '/uploads/banners/banner_instagram_viral.svg', 2, 1),
+(3, 'YouTube & TikTok Monetization', 'Watch Time & Subscribers', 'Fast eligibility packs with real engagement and channel-safe delivery.', 'Start Growing', '/new-order', '/uploads/banners/banner_monetization_boost.svg', 3, 1);
 

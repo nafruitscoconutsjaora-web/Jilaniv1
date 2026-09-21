@@ -1,0 +1,132 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 380" width="1200" height="380">
+  <defs>
+    <!-- Background Gradient: Instagram Rose & Sunset Neon Blend -->
+    <linearGradient id="bgGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3b0764"/>
+      <stop offset="35%" stop-color="#701a75"/>
+      <stop offset="70%" stop-color="#9f1239"/>
+      <stop offset="100%" stop-color="#e11d48"/>
+    </linearGradient>
+
+    <linearGradient id="textNeonRose" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="60%" stop-color="#fbcfe8"/>
+      <stop offset="100%" stop-color="#fda4af"/>
+    </linearGradient>
+
+    <linearGradient id="goldPill" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#fef08a"/>
+      <stop offset="100%" stop-color="#f59e0b"/>
+    </linearGradient>
+
+    <linearGradient id="igIconGrad" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#ffb703"/>
+      <stop offset="30%" stop-color="#fb8500"/>
+      <stop offset="65%" stop-color="#d81159"/>
+      <stop offset="100%" stop-color="#8f2d56"/>
+    </linearGradient>
+
+    <filter id="shadow2" x="-10%" y="-10%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#000000" flood-opacity="0.4"/>
+    </filter>
+
+    <filter id="heartGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="10" flood-color="#f43f5e" flood-opacity="0.8"/>
+    </filter>
+  </defs>
+
+  <!-- Base Card Background -->
+  <rect width="1200" height="380" rx="16" fill="url(#bgGrad2)"/>
+
+  <!-- Background Glowing Circles -->
+  <circle cx="1050" cy="190" r="240" fill="#be185d" opacity="0.25"/>
+  <circle cx="850" cy="50" r="140" fill="#f43f5e" opacity="0.18"/>
+  <circle cx="200" cy="360" r="150" fill="#ec4899" opacity="0.15"/>
+
+  <!-- Left Content Column -->
+  <!-- Top Category Chip -->
+  <g transform="translate(60, 48)">
+    <rect width="260" height="36" rx="18" fill="url(#goldPill)"/>
+    <text x="24" y="23" fill="#713f12" font-family="system-ui, -apple-system, sans-serif" font-size="13" font-weight="900" letter-spacing="1">🔥 VIRAL EXPLOSION 2026</text>
+  </g>
+
+  <!-- Main Headline -->
+  <text x="60" y="142" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="44" font-weight="900" letter-spacing="-0.5">
+    INSTAGRAM REELS &amp;
+  </text>
+  <text x="60" y="196" fill="url(#textNeonRose)" font-family="system-ui, -apple-system, sans-serif" font-size="44" font-weight="900" letter-spacing="-0.5">
+    REAL FOLLOWER BOOST
+  </text>
+
+  <!-- Subtitle -->
+  <text x="60" y="240" fill="#fce7f3" font-family="system-ui, -apple-system, sans-serif" font-size="17" font-weight="500">
+    ✨ Non-Drop Accounts • ⚡ Real Organic Engagement • 🛡️ 365 Days Auto-Refill Guarantee
+  </text>
+
+  <!-- Graphic CTA Button -->
+  <g transform="translate(60, 276)">
+    <rect width="210" height="52" rx="12" fill="#ffffff" filter="url(#shadow2)"/>
+    <text x="32" y="32" fill="#be185d" font-family="system-ui, -apple-system, sans-serif" font-size="16" font-weight="800" letter-spacing="0.5">BOOST ACCOUNT</text>
+    <path d="M176 26 L168 20 L168 32 Z" fill="#be185d"/>
+  </g>
+
+  <!-- Price Tag Graphic -->
+  <g transform="translate(290, 276)">
+    <rect width="180" height="52" rx="12" fill="rgba(255, 255, 255, 0.15)" stroke="rgba(255, 255, 255, 0.3)" stroke-width="1.5"/>
+    <text x="18" y="32" fill="#ffffff" font-family="system-ui, -apple-system, sans-serif" font-size="15" font-weight="700">From $0.002 / 1k</text>
+  </g>
+
+  <!-- RIGHT SIDE: Instagram Visual Artwork -->
+  <!-- Main Phone Mockup Screen -->
+  <g transform="translate(860, 40)" filter="url(#shadow2)">
+    <rect width="240" height="300" rx="24" fill="#ffffff"/>
+    
+    <!-- Instagram Post Header -->
+    <circle cx="36" cy="36" r="14" fill="url(#igIconGrad)"/>
+    <rect x="58" y="28" width="90" height="8" rx="4" fill="#0f172a"/>
+    <rect x="58" y="40" width="50" height="6" rx="3" fill="#94a3b8"/>
+
+    <!-- Post Visual Area with Gradient -->
+    <rect x="16" y="60" width="208" height="150" rx="14" fill="url(#igGradient)"/>
+    <circle cx="120" cy="135" r="32" fill="rgba(255,255,255,0.2)"/>
+    
+    <!-- Big Heart in Post -->
+    <path d="M120 144 C 114 136, 96 125, 96 112 C 96 100, 107 92, 120 106 C 133 92, 144 100, 144 112 C 144 125, 126 136, 120 144 Z" fill="#ffffff" filter="url(#heartGlow)"/>
+
+    <!-- Instagram Metrics Bar -->
+    <g transform="translate(20, 222)">
+      <!-- Heart Icon -->
+      <path d="M12 18 C 8 13, 1 8, 1 3 C 1 -2, 7 -4, 12 1 C 17 -4, 23 -2, 23 3 C 23 8, 16 13, 12 18 Z" fill="#e11d48"/>
+      <text x="28" y="14" fill="#0f172a" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="800">148,920</text>
+
+      <!-- Comment Icon -->
+      <circle cx="108" cy="8" r="8" fill="#e2e8f0"/>
+      <text x="122" y="14" fill="#64748b" font-family="system-ui, -apple-system, sans-serif" font-size="12" font-weight="700">4,812</text>
+    </g>
+
+    <!-- Verified Badge Pill -->
+    <rect x="18" y="254" width="204" height="28" rx="8" fill="#fdf2f8"/>
+    <text x="32" y="273" fill="#be185d" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="800">✅ TOP EXPLORE PAGE RANK</text>
+  </g>
+
+  <!-- Floating +100K Followers Notification Pill -->
+  <g transform="translate(720, 110)" filter="url(#shadow2)">
+    <rect width="180" height="58" rx="16" fill="#ffffff"/>
+    <circle cx="32" cy="29" r="16" fill="#e11d48"/>
+    <path d="M26 29 L30 33 L38 25" fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round"/>
+    <text x="56" y="26" fill="#64748b" font-family="system-ui, -apple-system, sans-serif" font-size="11" font-weight="700">NEW FOLLOWERS</text>
+    <text x="56" y="44" fill="#0f172a" font-family="system-ui, -apple-system, sans-serif" font-size="15" font-weight="900">+100,000</text>
+  </g>
+
+  <!-- Floating Floating Heart -->
+  <g transform="translate(740, 230)" filter="url(#shadow2)">
+    <circle cx="30" cy="30" r="28" fill="#e11d48"/>
+    <path d="M30 38 C 24 32, 14 23, 14 15 C 14 8, 20 5, 30 13 C 40 5, 46 8, 46 15 C 46 23, 36 32, 30 38 Z" fill="#ffffff"/>
+  </g>
+
+  <!-- Sparkles -->
+  <g fill="#fef08a">
+    <polygon points="680,60 684,72 696,76 684,80 680,92 676,80 664,76 676,72"/>
+    <polygon points="1130,280 1133,288 1141,291 1133,294 1130,302 1127,294 1119,291 1127,288"/>
+  </g>
+</svg>

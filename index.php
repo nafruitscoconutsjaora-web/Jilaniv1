@@ -48,6 +48,7 @@ if ($requestUri !== '/' && file_exists($filePath) && !is_dir($filePath)) {
         'jpeg' => 'image/jpeg',
         'gif' => 'image/gif',
         'svg' => 'image/svg+xml',
+        'webp' => 'image/webp',
         'ico' => 'image/x-icon',
         'woff' => 'font/woff',
         'woff2' => 'font/woff2',
@@ -1012,6 +1013,135 @@ switch ($requestUri) {
             flash_set('success', 'User dashboard hero banner settings updated successfully.');
         }
 
+        redirect('/admin/settings');
+        exit;
+
+    case '/admin/banners/add':
+        Auth::requireAdmin();
+        verify_csrf();
+
+        $heading = trim($_POST['heading'] ?? 'Promotional Banner');
+        $ctaLink = trim($_POST['cta_link'] ?? '/new-order');
+        $sortOrder = (int)($_POST['sort_order'] ?? 1);
+        $isActive = isset($_POST['is_active']) ? 1 : 0;
+        $imageUrl = trim($_POST['image_url'] ?? '');
+
+        if ($ctaLink === '') {
+            $ctaLink = '/new-order';
+        }
+
+        // Process File Upload with Strict Validation if provided
+        if (isset($_FILES['banner_file']) && $_FILES['banner_file']['error'] === UPLOAD_ERR_OK) {
+            $file = $_FILES['banner_file'];
+            $maxBytes = 5 * 1024 * 1024; // 5MB
+            if ($file['size'] > $maxBytes) {
+                flash_set('error', 'Image file is too large. Maximum allowed size is 5MB.');
+                redirect('/admin/settings');
+                exit;
+            }
+
+            $allowedExts = ['png', 'jpg', 'jpeg', 'webp', 'svg', 'gif'];
+            $fileExt = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+            if (!in_array($fileExt, $allowedExts, true)) {
+                flash_set('error', 'Invalid image format. Allowed formats: PNG, JPG, JPEG, WEBP, SVG, GIF.');
+                redirect('/admin/settings');
+                exit;
+            }
+
+            // Validate MIME type
+            $finfo = new finfo(FILEINFO_MIME_TYPE);
+            $mime = $finfo->file($file['tmp_name']);
+            $allowedMimes = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml', 'image/gif', 'text/xml', 'text/plain'];
+            if (!in_array($mime, $allowedMimes, true)) {
+                flash_set('error', 'Invalid image MIME type detected.');
+                redirect('/admin/settings');
+                exit;
+            }
+
+            $uploadDir = __DIR__ . '/uploads/banners';
+            if (!is_dir($uploadDir)) {
+                mkdir($uploadDir, 0755, true);
+            }
+
+            $newFileName = 'banner_' . bin2hex(random_bytes(8)) . '.' . $fileExt;
+            $destination = $uploadDir . '/' . $newFileName;
+
+            if (move_uploaded_file($file['tmp_name'], $destination)) {
+                $imageUrl = '/uploads/banners/' . $newFileName;
+            } else {
+                flash_set('error', 'Failed to save uploaded banner image.');
+                redirect('/admin/settings');
+                exit;
+            }
+        }
+
+        if (empty($imageUrl)) {
+            flash_set('error', 'Please upload a banner image or provide a valid image URL.');
+            redirect('/admin/settings');
+            exit;
+        }
+
+        DB::query(
+            "INSERT INTO hero_banners (heading, subheading, description, cta_text, cta_link, image_url, sort_order, is_active) VALUES (?, '', '', 'Explore Services', ?, ?, ?, ?)",
+            [$heading, $ctaLink, $imageUrl, $sortOrder, $isActive]
+        );
+
+        flash_set('success', 'New banner added to the user dashboard slider successfully.');
+        redirect('/admin/settings');
+        exit;
+
+    case '/admin/banners/toggle':
+        Auth::requireAdmin();
+        verify_csrf();
+
+        $bannerId = (int)($_POST['banner_id'] ?? 0);
+        $banner = DB::fetch("SELECT id, is_active FROM hero_banners WHERE id = ?", [$bannerId]);
+        if ($banner) {
+            $newStatus = $banner['is_active'] ? 0 : 1;
+            DB::query("UPDATE hero_banners SET is_active = ?, updated_at = NOW() WHERE id = ?", [$newStatus, $bannerId]);
+            flash_set('success', 'Banner status updated.');
+        }
+        redirect('/admin/settings');
+        exit;
+
+    case '/admin/banners/update':
+        Auth::requireAdmin();
+        verify_csrf();
+
+        $bannerId = (int)($_POST['banner_id'] ?? 0);
+        $heading = trim($_POST['heading'] ?? '');
+        $ctaLink = trim($_POST['cta_link'] ?? '/new-order');
+        $sortOrder = (int)($_POST['sort_order'] ?? 0);
+        $isActive = isset($_POST['is_active']) ? 1 : 0;
+
+        if ($bannerId > 0) {
+            DB::query(
+                "UPDATE hero_banners SET heading = ?, cta_link = ?, sort_order = ?, is_active = ?, updated_at = NOW() WHERE id = ?",
+                [$heading, $ctaLink, $sortOrder, $isActive, $bannerId]
+            );
+            flash_set('success', 'Banner updated successfully.');
+        }
+        redirect('/admin/settings');
+        exit;
+
+    case '/admin/banners/delete':
+        Auth::requireAdmin();
+        verify_csrf();
+
+        $bannerId = (int)($_POST['banner_id'] ?? 0);
+        $banner = DB::fetch("SELECT * FROM hero_banners WHERE id = ?", [$bannerId]);
+        if ($banner) {
+            // Delete uploaded file if it was a custom upload and exists
+            $img = $banner['image_url'];
+            if ($img && strpos($img, '/uploads/banners/banner_') === 0) {
+                $filePath = __DIR__ . $img;
+                if (file_exists($filePath) && is_file($filePath) && !in_array(basename($img), ['banner_social_growth.svg', 'banner_instagram_viral.svg', 'banner_monetization_boost.svg'], true)) {
+                    @unlink($filePath);
+                }
+            }
+            DB::query("DELETE FROM hero_banners WHERE id = ?", [$bannerId]);
+            flash_set('success', 'Banner deleted successfully.');
+        }
         redirect('/admin/settings');
         exit;
 

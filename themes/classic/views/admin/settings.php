@@ -17,16 +17,7 @@ $cronKey = get_setting('cron_key', 'cron_smm_secure_key_2026');
 
 $cronUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/cron.php?key=' . urlencode($cronKey);
 
-$heroBanner = DB::fetch("SELECT * FROM hero_banners WHERE id = 1 LIMIT 1") ?: [
-    'id' => 1,
-    'heading' => 'Grow Your Social Media',
-    'subheading' => 'Fast • Secure • Reliable',
-    'description' => 'Get real engagement and boost your online presence with our premium SMM services.',
-    'cta_text' => 'Explore Services',
-    'cta_link' => '/new-order',
-    'image_url' => '',
-    'is_active' => 1
-];
+$allBanners = DB::fetchAll("SELECT * FROM hero_banners ORDER BY sort_order ASC, id ASC");
 ?>
 
 <div class="grid grid-cols-2" style="align-items: start;">
@@ -148,63 +139,122 @@ $heroBanner = DB::fetch("SELECT * FROM hero_banners WHERE id = 1 LIMIT 1") ?: [
       </div>
     </div>
 
-    <!-- User Dashboard Hero Banner Management -->
+    <!-- User Dashboard Promotional Hero Banner Slider Management -->
     <div class="card" id="hero_banner_settings_card" style="margin-top: 1.5rem;">
-      <div class="card-header">
-        <h3 class="card-title">User Dashboard Hero Banner</h3>
+      <div class="card-header" style="display: flex; justify-content: space-between; align-items: center;">
+        <h3 class="card-title">Dashboard Hero Banner Slider</h3>
+        <span class="badge" style="background: var(--rose-50); color: var(--primary-rose); border: 1px solid var(--rose-200); font-weight: 700;">
+          <?= count($allBanners) ?> Banners Total
+        </span>
       </div>
-      <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;">
-        Configure the premium Rose & White hero banner shown strictly to authenticated users on their dashboard.
+      <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+        Manage the image-based promotional slider banners displayed exclusively to authenticated users on their dashboard.
       </p>
 
-      <form method="POST" action="/admin/settings/save" id="hero_banner_settings_form">
-        <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
-        <input type="hidden" name="section" value="hero_banner">
-        <input type="hidden" name="banner_id" value="<?= e($heroBanner['id']) ?>">
-
-        <div class="form-group">
-          <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
-            <input type="checkbox" name="is_active" value="1" <?= ($heroBanner['is_active'] ?? 1) ? 'checked' : '' ?> style="width: auto;">
-            <span style="font-weight: 600;">Enable Hero Banner on User Dashboard</span>
-          </label>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Main Heading</label>
-          <input type="text" name="heading" class="form-control" value="<?= e($heroBanner['heading'] ?? 'Grow Your Social Media') ?>" required>
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Subheading / Badge</label>
-          <input type="text" name="subheading" class="form-control" value="<?= e($heroBanner['subheading'] ?? 'Fast • Secure • Reliable') ?>" placeholder="e.g. Fast • Secure • Reliable">
-        </div>
-
-        <div class="form-group">
-          <label class="form-label">Description Text</label>
-          <textarea name="description" class="form-control" rows="2"><?= e($heroBanner['description'] ?? '') ?></textarea>
-        </div>
-
-        <div class="grid grid-cols-2" style="gap: 0.75rem;">
-          <div class="form-group">
-            <label class="form-label">CTA Button Text</label>
-            <input type="text" name="cta_text" class="form-control" value="<?= e($heroBanner['cta_text'] ?? 'Explore Services') ?>" required>
+      <!-- Existing Banners List -->
+      <div style="display: flex; flex-direction: column; gap: 1rem; margin-bottom: 2rem;" id="slider_banners_list">
+        <?php if (empty($allBanners)): ?>
+          <div style="padding: 1.5rem; text-align: center; color: var(--text-muted); background: var(--bg-subtle); border-radius: var(--radius-sm); border: 1px dashed var(--rose-200);">
+            No slider banners added yet. Upload your first banner below.
           </div>
+        <?php else: ?>
+          <?php foreach ($allBanners as $b): ?>
+            <div style="display: flex; gap: 1rem; align-items: center; padding: 0.875rem; border: 1px solid var(--rose-200); border-radius: var(--radius-md); background: #ffffff; flex-wrap: wrap;">
+              <!-- Banner Thumbnail Preview -->
+              <div style="width: 140px; height: 50px; border-radius: var(--radius-sm); overflow: hidden; background: var(--rose-50); flex-shrink: 0; border: 1px solid var(--rose-100); display: flex; align-items: center; justify-content: center;">
+                <?php if (!empty($b['image_url'])): ?>
+                  <img src="<?= e($b['image_url']) ?>" alt="Banner" style="width: 100%; height: 100%; object-fit: cover;">
+                <?php else: ?>
+                  <span style="font-size: 0.75rem; color: var(--text-muted);">No image</span>
+                <?php endif; ?>
+              </div>
+
+              <!-- Banner Info -->
+              <div style="flex: 1; min-width: 180px;">
+                <div style="font-weight: 700; font-size: 0.875rem; color: var(--text-main); margin-bottom: 0.2rem;">
+                  <?= e($b['heading']) ?>
+                </div>
+                <div style="font-size: 0.75rem; color: var(--text-muted); word-break: break-all;">
+                  Link: <span style="color: var(--primary-rose); font-family: monospace;"><?= e($b['cta_link'] ?: '/new-order') ?></span>
+                  &bull; Order: <strong><?= (int)$b['sort_order'] ?></strong>
+                </div>
+              </div>
+
+              <!-- Actions & Status -->
+              <div style="display: flex; align-items: center; gap: 0.5rem; margin-left: auto;">
+                <!-- Status Toggle -->
+                <form method="POST" action="/admin/banners/toggle" style="display: inline; margin: 0;">
+                  <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                  <input type="hidden" name="banner_id" value="<?= (int)$b['id'] ?>">
+                  <button type="submit" class="btn btn-sm" style="background: <?= $b['is_active'] ? 'var(--emerald-500, #10b981)' : '#94a3b8' ?>; color: #ffffff; padding: 0.35rem 0.65rem; font-size: 0.75rem; border: none;">
+                    <?= $b['is_active'] ? 'Active' : 'Inactive' ?>
+                  </button>
+                </form>
+
+                <!-- Delete Banner -->
+                <form method="POST" action="/admin/banners/delete" style="display: inline; margin: 0;" onsubmit="return confirm('Are you sure you want to remove this banner from the slider?');">
+                  <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+                  <input type="hidden" name="banner_id" value="<?= (int)$b['id'] ?>">
+                  <button type="submit" class="btn btn-danger btn-sm" style="padding: 0.35rem 0.65rem; font-size: 0.75rem;">
+                    Delete
+                  </button>
+                </form>
+              </div>
+            </div>
+          <?php endforeach; ?>
+        <?php endif; ?>
+      </div>
+
+      <!-- Add / Upload New Banner Form -->
+      <div style="border-top: 1px solid var(--rose-200); padding-top: 1.5rem;" id="add_slider_banner_box">
+        <h4 style="font-size: 0.9375rem; font-weight: 700; margin-bottom: 0.75rem; color: var(--rose-950);">
+          Upload New Slider Banner
+        </h4>
+        <form method="POST" action="/admin/banners/add" enctype="multipart/form-data" id="add_slider_banner_form">
+          <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+
           <div class="form-group">
-            <label class="form-label">CTA Button Link</label>
-            <input type="text" name="cta_link" class="form-control" value="<?= e($heroBanner['cta_link'] ?? '/new-order') ?>" required>
+            <label class="form-label">Banner Title / Caption (for Accessibility & Alt)</label>
+            <input type="text" name="heading" class="form-control" placeholder="e.g. 2026 Engagement Booster Pack" required>
           </div>
-        </div>
 
-        <div class="form-group">
-          <label class="form-label">Optional Right-Side Image URL</label>
-          <input type="url" name="image_url" class="form-control" value="<?= e($heroBanner['image_url'] ?? '') ?>" placeholder="https://example.com/banner-graphic.png (leave blank for built-in Rose graphic)">
-          <small style="color: var(--text-muted); font-size: 0.75rem;">If left empty, a clean SVG geometric social growth graphic is rendered automatically.</small>
-        </div>
+          <div class="form-group">
+            <label class="form-label">Banner Image Upload (PNG, JPG, WEBP, SVG, max 5MB)</label>
+            <input type="file" name="banner_file" class="form-control" accept="image/png,image/jpeg,image/webp,image/svg+xml,image/gif" style="padding: 0.4rem;">
+            <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 0.25rem;">
+              Recommended widescreen ratio: 1200 &times; 380 px or 16:9 for clean responsive display.
+            </small>
+          </div>
 
-        <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem;">
-          Save Hero Banner Settings
-        </button>
-      </form>
+          <div class="form-group">
+            <label class="form-label">Or External Image URL (Alternative)</label>
+            <input type="url" name="image_url" class="form-control" placeholder="https://example.com/uploads/banners/my-banner.png">
+          </div>
+
+          <div class="grid grid-cols-2" style="gap: 0.75rem;">
+            <div class="form-group">
+              <label class="form-label">Target Click URL</label>
+              <input type="text" name="cta_link" class="form-control" value="/new-order" required>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label">Sort Order</label>
+              <input type="number" name="sort_order" class="form-control" value="<?= count($allBanners) + 1 ?>" min="1" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+              <input type="checkbox" name="is_active" value="1" checked style="width: auto;">
+              <span>Activate this banner immediately in the user dashboard slider</span>
+            </label>
+          </div>
+
+          <button type="submit" class="btn btn-primary" id="btn_upload_banner">
+            Upload &amp; Add Banner
+          </button>
+        </form>
+      </div>
     </div>
   </div>
 </div>
