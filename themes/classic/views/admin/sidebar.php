@@ -16,40 +16,52 @@ $siteName = e(get_setting('site_name', 'Rose SMM Panel'));
 
   <nav class="sidebar-nav" id="admin_sidebar_nav">
     <a href="/admin" class="nav-link <?= $currentPage === 'admin_dashboard' ? 'active' : '' ?>" id="admin_link_dashboard">
-      Dashboard
+      <?= SMMIcons::getNavIcon('admin_dashboard') ?>
+      <span>Dashboard</span>
     </a>
     <a href="/admin/users" class="nav-link <?= $currentPage === 'admin_users' ? 'active' : '' ?>" id="admin_link_users">
-      Users
+      <?= SMMIcons::getNavIcon('admin_users') ?>
+      <span>Users</span>
     </a>
     <a href="/admin/orders" class="nav-link <?= $currentPage === 'admin_orders' ? 'active' : '' ?>" id="admin_link_orders">
-      Orders
+      <?= SMMIcons::getNavIcon('admin_orders') ?>
+      <span>Orders</span>
     </a>
     <a href="/admin/categories" class="nav-link <?= $currentPage === 'admin_categories' ? 'active' : '' ?>" id="admin_link_categories">
-      Categories
+      <?= SMMIcons::getNavIcon('admin_categories') ?>
+      <span>Categories</span>
     </a>
     <a href="/admin/services" class="nav-link <?= $currentPage === 'admin_services' ? 'active' : '' ?>" id="admin_link_services">
-      Services
+      <?= SMMIcons::getNavIcon('admin_services') ?>
+      <span>Services</span>
     </a>
     <a href="/admin/providers" class="nav-link <?= $currentPage === 'admin_providers' ? 'active' : '' ?>" id="admin_link_providers">
-      API Providers
+      <?= SMMIcons::getNavIcon('admin_providers') ?>
+      <span>API Providers</span>
     </a>
     <a href="/admin/provider-services" class="nav-link <?= $currentPage === 'admin_import' ? 'active' : '' ?>" id="admin_link_import">
-      Import Services
+      <?= SMMIcons::getNavIcon('admin_import') ?>
+      <span>Import Services</span>
     </a>
     <a href="/admin/payments" class="nav-link <?= $currentPage === 'admin_payments' ? 'active' : '' ?>" id="admin_link_payments">
-      Payments & Ledger
+      <?= SMMIcons::getNavIcon('admin_payments') ?>
+      <span>Payments & Ledger</span>
     </a>
     <a href="/admin/tickets" class="nav-link <?= $currentPage === 'admin_tickets' ? 'active' : '' ?>" id="admin_link_tickets">
-      Support Tickets
+      <?= SMMIcons::getNavIcon('admin_tickets') ?>
+      <span>Support Tickets</span>
     </a>
     <a href="/admin/finance" class="nav-link <?= $currentPage === 'admin_finance' ? 'active' : '' ?>" id="admin_link_finance">
-      Finance & Reports
+      <?= SMMIcons::getNavIcon('admin_finance') ?>
+      <span>Finance & Reports</span>
     </a>
     <a href="/admin/currencies" class="nav-link <?= $currentPage === 'admin_currencies' ? 'active' : '' ?>" id="admin_link_currencies">
-      Currencies
+      <?= SMMIcons::getNavIcon('admin_currencies') ?>
+      <span>Currencies</span>
     </a>
     <a href="/admin/settings" class="nav-link <?= $currentPage === 'admin_settings' ? 'active' : '' ?>" id="admin_link_settings">
-      System Settings
+      <?= SMMIcons::getNavIcon('admin_settings') ?>
+      <span>System Settings</span>
     </a>
   </nav>
 

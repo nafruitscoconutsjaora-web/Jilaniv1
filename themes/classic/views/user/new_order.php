@@ -36,20 +36,42 @@ $selectedCategory = (int)($_GET['category'] ?? ($categories[0]['id'] ?? 0));
 
         <div class="form-group">
           <label for="order_category" class="form-label">Select Category</label>
-          <select id="order_category" name="category_id" class="form-control" required>
-            <?php foreach ($categories as $cat): ?>
-              <option value="<?= $cat['id'] ?>" <?= $selectedCategory === (int)$cat['id'] ? 'selected' : '' ?>>
-                <?= e($cat['name']) ?>
-              </option>
-            <?php endforeach; ?>
-          </select>
+          <div class="category-select-wrapper">
+            <div class="category-select-icon-box" id="category_select_icon_box" aria-hidden="true">
+              <?php
+                $initialCatName = '';
+                foreach ($categories as $cat) {
+                    if ($selectedCategory === (int)$cat['id']) {
+                        $initialCatName = $cat['name'];
+                        break;
+                    }
+                }
+                if ($initialCatName === '' && !empty($categories)) {
+                    $initialCatName = $categories[0]['name'];
+                }
+                echo SMMIcons::getCategoryIcon($initialCatName, 'select-prefix-icon');
+              ?>
+            </div>
+            <select id="order_category" name="category_id" class="form-control select-with-icon" required>
+              <?php foreach ($categories as $cat): ?>
+                <option value="<?= $cat['id'] ?>" data-slug="<?= e(SMMIcons::getSlug($cat['name'])) ?>" data-name="<?= e($cat['name']) ?>" <?= $selectedCategory === (int)$cat['id'] ? 'selected' : '' ?>>
+                  <?= e($cat['name']) ?>
+                </option>
+              <?php endforeach; ?>
+            </select>
+          </div>
         </div>
 
         <div class="form-group">
           <label for="order_service" class="form-label">Select Service</label>
-          <select id="order_service" name="service_id" class="form-control" required>
-            <option value="">-- Choose a Service --</option>
-          </select>
+          <div class="category-select-wrapper">
+            <div class="category-select-icon-box" id="service_select_icon_box" aria-hidden="true">
+              <?= SMMIcons::getCategoryIcon($initialCatName, 'select-prefix-icon') ?>
+            </div>
+            <select id="order_service" name="service_id" class="form-control select-with-icon" required>
+              <option value="">-- Choose a Service --</option>
+            </select>
+          </div>
         </div>
 
         <div class="form-group">
@@ -119,6 +141,8 @@ $selectedCategory = (int)($_GET['category'] ?? ($categories[0]['id'] ?? 0));
 
 <script>
   window.smmServices = <?= json_encode($services, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+  window.smmCategories = <?= json_encode($categories, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+  window.smmCategorySvgs = <?= json_encode(SMMIcons::getAllCategorySvgs(), JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
 </script>
 
 <?php require __DIR__ . '/footer.php'; ?>

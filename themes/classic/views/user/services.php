@@ -30,11 +30,15 @@ $categories = DB::fetchAll("SELECT * FROM categories WHERE status = 'active' ORD
 
 <div class="filter-bar" id="user_services_filter_bar">
   <div class="filter-chips">
-    <a href="/user/services" class="chip <?= $categoryId === 0 ? 'active' : '' ?>">All Categories</a>
+    <a href="/user/services" class="chip <?= $categoryId === 0 ? 'active' : '' ?>">
+      <?= SMMIcons::getCategoryIcon('general', 'chip-icon') ?>
+      <span>All Categories</span>
+    </a>
     <?php foreach ($categories as $cat): ?>
       <a href="/user/services?category=<?= $cat['id'] ?><?= !empty($search) ? '&q=' . urlencode($search) : '' ?>" 
          class="chip <?= $categoryId === (int)$cat['id'] ? 'active' : '' ?>">
-        <?= e($cat['name']) ?>
+        <?= SMMIcons::getCategoryIcon($cat['name'], 'chip-icon') ?>
+        <span><?= e($cat['name']) ?></span>
       </a>
     <?php endforeach; ?>
   </div>
@@ -59,7 +63,10 @@ $categories = DB::fetchAll("SELECT * FROM categories WHERE status = 'active' ORD
       <div class="list-item-card" id="srv_card_<?= $srv['id'] ?>">
         <div class="item-card-row">
           <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
-            <span class="badge badge-default"><?= e($srv['category_name']) ?></span>
+            <span class="badge badge-default badge-with-icon">
+              <?= SMMIcons::getCategoryIcon($srv['category_name'], 'badge-icon') ?>
+              <span><?= e($srv['category_name']) ?></span>
+            </span>
             <span style="font-size: 0.8125rem; color: var(--text-muted);">ID: #<?= $srv['id'] ?></span>
           </div>
 

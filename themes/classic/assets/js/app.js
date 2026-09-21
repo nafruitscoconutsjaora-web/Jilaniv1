@@ -138,7 +138,48 @@ document.addEventListener('DOMContentLoaded', function () {
     const userCurrencySymbol = window.userCurrencySymbol || '$';
     const userCurrencyRate = parseFloat(window.userCurrencyRate || 1.0);
 
+    // Category and Service icon box elements
+    const catIconBox = document.getElementById('category_select_icon_box');
+    const srvIconBox = document.getElementById('service_select_icon_box');
+    const categorySvgs = window.smmCategorySvgs || {};
+
+    function getCategorySlug(name) {
+      const n = (name || '').toLowerCase().trim();
+      if (n.includes('insta')) return 'instagram';
+      if (n.includes('face') || n.includes('fb')) return 'facebook';
+      if (n.includes('you') || n.includes('tube') || n.includes('yt')) return 'youtube';
+      if (n.includes('tik') || n.includes('tok')) return 'tiktok';
+      if (n.includes('tele') || n.includes('tg')) return 'telegram';
+      if (n.includes('twit') || n.includes(' x ') || n.includes('x.com') || n.endsWith(' x')) return 'twitter';
+      if (n.includes('spot')) return 'spotify';
+      if (n.includes('linke')) return 'linkedin';
+      if (n.includes('disc')) return 'discord';
+      if (n.includes('twitc')) return 'twitch';
+      if (n.includes('whats')) return 'whatsapp';
+      if (n.includes('thread')) return 'threads';
+      if (n.includes('pinter')) return 'pinterest';
+      if (n.includes('reddi')) return 'reddit';
+      if (n.includes('soundc')) return 'soundcloud';
+      if (n.includes('web') || n.includes('traffic') || n.includes('visit') || n.includes('seo')) return 'traffic';
+      return 'general';
+    }
+
+    function updateCategoryIcons() {
+      const selectedCatOption = categorySelect.options[categorySelect.selectedIndex];
+      if (!selectedCatOption) return;
+      const catName = selectedCatOption.dataset.name || selectedCatOption.textContent.trim();
+      const slug = selectedCatOption.dataset.slug || getCategorySlug(catName);
+      const svg = categorySvgs[slug] || categorySvgs['general'] || '';
+      if (catIconBox && svg) {
+        catIconBox.innerHTML = svg;
+      }
+      if (srvIconBox && svg) {
+        srvIconBox.innerHTML = svg;
+      }
+    }
+
     function populateServices(categoryId) {
+      updateCategoryIcons();
       serviceSelect.innerHTML = '<option value="">-- Choose a Service --</option>';
       const filtered = servicesData.filter(s => s.category_id == categoryId);
       

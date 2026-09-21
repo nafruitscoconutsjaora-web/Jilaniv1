@@ -11,6 +11,7 @@ require_once __DIR__ . '/includes/auth.php';
 require_once __DIR__ . '/includes/currency.php';
 require_once __DIR__ . '/includes/smm_provider.php';
 require_once __DIR__ . '/includes/razorpay.php';
+require_once __DIR__ . '/includes/icons.php';
 
 // Prevent blank white screens on uncaught exceptions
 set_exception_handler(function (\Throwable $e) {
@@ -976,6 +977,39 @@ switch ($requestUri) {
             set_setting('razorpay_key_secret', trim($_POST['razorpay_key_secret'] ?? ''));
             set_setting('razorpay_webhook_secret', trim($_POST['razorpay_webhook_secret'] ?? ''));
             flash_set('success', 'Razorpay credentials saved.');
+        } elseif ($section === 'hero_banner') {
+            $bannerId = (int)($_POST['banner_id'] ?? 1);
+            $heading = trim($_POST['heading'] ?? 'Grow Your Social Media');
+            $subheading = trim($_POST['subheading'] ?? 'Fast • Secure • Reliable');
+            $description = trim($_POST['description'] ?? '');
+            $ctaText = trim($_POST['cta_text'] ?? 'Explore Services');
+            $ctaLink = trim($_POST['cta_link'] ?? '/new-order');
+            $imageUrl = trim($_POST['image_url'] ?? '');
+            $isActive = isset($_POST['is_active']) ? 1 : 0;
+
+            if ($heading === '') {
+                $heading = 'Grow Your Social Media';
+            }
+            if ($ctaText === '') {
+                $ctaText = 'Explore Services';
+            }
+            if ($ctaLink === '') {
+                $ctaLink = '/new-order';
+            }
+
+            $existing = DB::fetch("SELECT id FROM hero_banners WHERE id = ? LIMIT 1", [$bannerId]);
+            if ($existing) {
+                DB::query(
+                    "UPDATE hero_banners SET heading = ?, subheading = ?, description = ?, cta_text = ?, cta_link = ?, image_url = ?, is_active = ?, updated_at = NOW() WHERE id = ?",
+                    [$heading, $subheading, $description, $ctaText, $ctaLink, $imageUrl, $isActive, $bannerId]
+                );
+            } else {
+                DB::query(
+                    "INSERT INTO hero_banners (id, heading, subheading, description, cta_text, cta_link, image_url, is_active, sort_order) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)",
+                    [$bannerId, $heading, $subheading, $description, $ctaText, $ctaLink, $imageUrl, $isActive]
+                );
+            }
+            flash_set('success', 'User dashboard hero banner settings updated successfully.');
         }
 
         redirect('/admin/settings');

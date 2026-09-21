@@ -16,6 +16,17 @@ $razorpayWebhookSecret = get_setting('razorpay_webhook_secret', '');
 $cronKey = get_setting('cron_key', 'cron_smm_secure_key_2026');
 
 $cronUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost') . '/cron.php?key=' . urlencode($cronKey);
+
+$heroBanner = DB::fetch("SELECT * FROM hero_banners WHERE id = 1 LIMIT 1") ?: [
+    'id' => 1,
+    'heading' => 'Grow Your Social Media',
+    'subheading' => 'Fast • Secure • Reliable',
+    'description' => 'Get real engagement and boost your online presence with our premium SMM services.',
+    'cta_text' => 'Explore Services',
+    'cta_link' => '/new-order',
+    'image_url' => '',
+    'is_active' => 1
+];
 ?>
 
 <div class="grid grid-cols-2" style="align-items: start;">
@@ -135,6 +146,65 @@ $cronUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : '
         cPanel Command:<br>
         */5 * * * * curl -s "<?= e($cronUrl) ?>" >/dev/null 2>&1
       </div>
+    </div>
+
+    <!-- User Dashboard Hero Banner Management -->
+    <div class="card" id="hero_banner_settings_card" style="margin-top: 1.5rem;">
+      <div class="card-header">
+        <h3 class="card-title">User Dashboard Hero Banner</h3>
+      </div>
+      <p style="font-size: 0.875rem; color: var(--text-muted); margin-bottom: 1rem;">
+        Configure the premium Rose & White hero banner shown strictly to authenticated users on their dashboard.
+      </p>
+
+      <form method="POST" action="/admin/settings/save" id="hero_banner_settings_form">
+        <input type="hidden" name="csrf_token" value="<?= csrf_token() ?>">
+        <input type="hidden" name="section" value="hero_banner">
+        <input type="hidden" name="banner_id" value="<?= e($heroBanner['id']) ?>">
+
+        <div class="form-group">
+          <label class="form-label" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+            <input type="checkbox" name="is_active" value="1" <?= ($heroBanner['is_active'] ?? 1) ? 'checked' : '' ?> style="width: auto;">
+            <span style="font-weight: 600;">Enable Hero Banner on User Dashboard</span>
+          </label>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Main Heading</label>
+          <input type="text" name="heading" class="form-control" value="<?= e($heroBanner['heading'] ?? 'Grow Your Social Media') ?>" required>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Subheading / Badge</label>
+          <input type="text" name="subheading" class="form-control" value="<?= e($heroBanner['subheading'] ?? 'Fast • Secure • Reliable') ?>" placeholder="e.g. Fast • Secure • Reliable">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Description Text</label>
+          <textarea name="description" class="form-control" rows="2"><?= e($heroBanner['description'] ?? '') ?></textarea>
+        </div>
+
+        <div class="grid grid-cols-2" style="gap: 0.75rem;">
+          <div class="form-group">
+            <label class="form-label">CTA Button Text</label>
+            <input type="text" name="cta_text" class="form-control" value="<?= e($heroBanner['cta_text'] ?? 'Explore Services') ?>" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label">CTA Button Link</label>
+            <input type="text" name="cta_link" class="form-control" value="<?= e($heroBanner['cta_link'] ?? '/new-order') ?>" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Optional Right-Side Image URL</label>
+          <input type="url" name="image_url" class="form-control" value="<?= e($heroBanner['image_url'] ?? '') ?>" placeholder="https://example.com/banner-graphic.png (leave blank for built-in Rose graphic)">
+          <small style="color: var(--text-muted); font-size: 0.75rem;">If left empty, a clean SVG geometric social growth graphic is rendered automatically.</small>
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem;">
+          Save Hero Banner Settings
+        </button>
+      </form>
     </div>
   </div>
 </div>

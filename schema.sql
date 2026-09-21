@@ -197,6 +197,24 @@ CREATE TABLE `login_attempts` (
   INDEX `idx_login_ip` (`ip_address`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- --------------------------------------------------------
+-- Table: hero_banners (User Dashboard Hero Banner Management)
+-- --------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `hero_banners` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `heading` VARCHAR(255) NOT NULL,
+  `subheading` VARCHAR(255) DEFAULT NULL,
+  `description` TEXT DEFAULT NULL,
+  `cta_text` VARCHAR(100) NOT NULL DEFAULT 'Explore Services',
+  `cta_link` VARCHAR(255) NOT NULL DEFAULT '/new-order',
+  `image_url` VARCHAR(255) DEFAULT NULL,
+  `sort_order` INT NOT NULL DEFAULT 0,
+  `is_active` TINYINT(1) NOT NULL DEFAULT 1,
+  `created_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` TIMESTAMP NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- ==========================================
@@ -229,3 +247,8 @@ INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES
 -- Hash generated using password_hash('admin12345', PASSWORD_BCRYPT)
 INSERT INTO `users` (`username`, `email`, `password`, `role`, `balance`, `currency_code`, `api_key`, `status`) VALUES
 ('admin', 'admin@smmpanel.com', '$2y$10$JJzBQee0y09kTOMXEdUUz.HifgrwxZ5l1kNoRg1hQmCj5GCI803Ne', 'admin', 0.0000, 'USD', 'smm_adm_9f3b145a8e23f0c18d4512e7', 'active');
+
+-- Default Active Hero Banner for User Dashboard
+INSERT INTO `hero_banners` (`id`, `heading`, `subheading`, `description`, `cta_text`, `cta_link`, `sort_order`, `is_active`) VALUES
+(1, 'Grow Your Social Media', 'Fast • Secure • Reliable', 'Get real engagement and boost your online presence with our premium SMM services.', 'Explore Services', '/new-order', 1, 1);
+
