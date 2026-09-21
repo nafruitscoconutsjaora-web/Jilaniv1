@@ -20,13 +20,6 @@ class Currency {
     }
 
     /**
-     * Alias for getAllActive()
-     */
-    public static function getActive(): array {
-        return self::getAllActive();
-    }
-
-    /**
      * Get Specific Currency by Code
      */
     public static function get(string $code): ?array {

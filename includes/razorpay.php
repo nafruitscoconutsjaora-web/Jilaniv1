@@ -1,118 +1,64 @@
 <?php
 /**
  * SMM Panel - Real Razorpay Payment Gateway Integration
- * INR Only - Production-ready server-side order creation, HMAC-SHA256 signature verification & Webhook
+ * Production-ready server-side order creation & HMAC-SHA256 signature verification
  */
 
 require_once __DIR__ . '/../db.php';
 require_once __DIR__ . '/functions.php';
-require_once __DIR__ . '/currency.php';
 
 class RazorpayGateway {
-    private string $keyId = '';
-    private string $keySecret = '';
-    private string $webhookSecret = '';
-    private bool $isEnabled = false;
-    private float $minAmount = 10.0;
-    private float $maxAmount = 50000.0;
-    private ?array $gatewayRecord = null;
+    private string $keyId;
+    private string $keySecret;
+    private string $webhookSecret;
+    private bool $isEnabled;
 
     public function __construct() {
-        // Load dynamically from payment_gateways table
-        try {
-            $gw = DB::fetch("SELECT * FROM payment_gateways WHERE code = 'razorpay' LIMIT 1");
-            if ($gw) {
-                $this->gatewayRecord = $gw;
-                $this->isEnabled = (bool)$gw['is_enabled'];
-                $this->minAmount = (float)($gw['min_amount'] ?? 10.0);
-                $this->maxAmount = (float)($gw['max_amount'] ?? 50000.0);
-
-                if (!empty($gw['config'])) {
-                    $config = json_decode($gw['config'], true);
-                    if (is_array($config)) {
-                        $this->keyId = trim($config['key_id'] ?? '');
-                        $this->keySecret = trim($config['key_secret'] ?? '');
-                        $this->webhookSecret = trim($config['webhook_secret'] ?? '');
-                    }
-                }
-            }
-        } catch (Exception $e) {
-            error_log("Failed to load gateway config from DB: " . $e->getMessage());
-        }
-
-        // Fallback to legacy settings table if config is empty
-        if (empty($this->keyId)) {
-            $this->keyId = (string)get_setting('razorpay_key_id', '');
-        }
-        if (empty($this->keySecret)) {
-            $this->keySecret = (string)get_setting('razorpay_key_secret', '');
-        }
-        if (empty($this->webhookSecret)) {
-            $this->webhookSecret = (string)get_setting('razorpay_webhook_secret', '');
-        }
+        $this->keyId = (string)get_setting('razorpay_key_id', '');
+        $this->keySecret = (string)get_setting('razorpay_key_secret', '');
+        $this->webhookSecret = (string)get_setting('razorpay_webhook_secret', '');
+        $this->isEnabled = (bool)get_setting('razorpay_enabled', '0');
     }
 
     /**
-     * Check if Razorpay is fully configured and enabled by admin
+     * Check if Razorpay is fully configured and ready
      */
     public function isConfigured(): bool {
         return !empty($this->keyId) && !empty($this->keySecret) && $this->isEnabled;
-    }
-
-    public function isEnabled(): bool {
-        return $this->isEnabled;
     }
 
     public function getKeyId(): string {
         return $this->keyId;
     }
 
-    public function getMinAmount(): float {
-        return $this->minAmount;
-    }
-
-    public function getMaxAmount(): float {
-        return $this->maxAmount;
-    }
-
     /**
-     * Create Order on Razorpay API strictly in INR (POST https://api.razorpay.com/v1/orders)
-     * Amount sent is in Paise (1 INR = 100 Paise)
+     * Create Order on Razorpay API (POST https://api.razorpay.com/v1/orders)
      */
-    public function createOrder(int $userId, float $amountInr): array {
+    public function createOrder(int $userId, float $amountUsd, string $currencyCode = 'INR', float $exchangeRate = 1.0): array {
         if (!$this->isConfigured()) {
             return [
                 'success' => false,
-                'message' => 'Razorpay payment gateway is currently disabled or awaiting API credentials in Payment Gateway Manager.'
+                'message' => 'Razorpay payment gateway is not configured yet. Please enter valid Razorpay credentials in Admin Settings.'
             ];
         }
 
-        if ($amountInr < $this->minAmount) {
+        // Razorpay supports currencies like INR, USD, EUR, etc.
+        // Convert amount to target currency
+        $convertedAmount = round($amountUsd * $exchangeRate, 2);
+        // Razorpay expects amount in smallest currency sub-unit (e.g. paise for INR, cents for USD)
+        $amountInSubunits = (int)round($convertedAmount * 100);
+
+        if ($amountInSubunits < 100) { // Minimum 1.00
             return [
                 'success' => false,
-                'message' => 'Minimum deposit amount is ₹' . number_format($this->minAmount, 2) . ' INR.'
+                'message' => 'Minimum deposit amount is $1.00.'
             ];
         }
-
-        if ($amountInr > $this->maxAmount) {
-            return [
-                'success' => false,
-                'message' => 'Maximum deposit amount is ₹' . number_format($this->maxAmount, 2) . ' INR.'
-            ];
-        }
-
-        // Razorpay expects amount in smallest currency sub-unit: Paise (e.g. ₹100 = 10000 paise)
-        $amountInPaise = (int)round($amountInr * 100);
-
-        // Convert INR amount to base currency (USD) for ledger balance calculation
-        $inrCurrency = Currency::get('INR');
-        $inrRate = (float)($inrCurrency['rate'] ?? 90.0);
-        $amountBaseUsd = Currency::convertToUsd($amountInr, $inrRate);
 
         $receipt = 'rcpt_' . $userId . '_' . time();
         $payload = [
-            'amount' => $amountInPaise,
-            'currency' => 'INR', // Strictly INR only
+            'amount' => $amountInSubunits,
+            'currency' => strtoupper($currencyCode),
             'receipt' => $receipt,
             'payment_capture' => 1
         ];
@@ -158,18 +104,17 @@ class RazorpayGateway {
         // Save pending payment record in database for idempotency & auditing
         DB::query(
             "INSERT INTO payments (user_id, payment_method, order_id, amount, currency, converted_amount, status)
-             VALUES (?, 'razorpay', ?, ?, 'INR', ?, 'pending')",
-            [$userId, $razorpayOrderId, $amountInr, $amountBaseUsd]
+             VALUES (?, 'razorpay', ?, ?, ?, ?, 'pending')",
+            [$userId, $razorpayOrderId, $amountUsd, $currencyCode, $convertedAmount]
         );
 
         return [
             'success' => true,
             'order_id' => $razorpayOrderId,
-            'amount' => $amountInPaise,
-            'currency' => 'INR',
+            'amount' => $amountInSubunits,
+            'currency' => strtoupper($currencyCode),
             'key_id' => $this->keyId,
-            'amount_inr' => $amountInr,
-            'converted_base_amount' => $amountBaseUsd
+            'converted_amount' => $convertedAmount
         ];
     }
 
@@ -178,7 +123,7 @@ class RazorpayGateway {
      */
     public function verifyPayment(int $userId, string $razorpayOrderId, string $razorpayPaymentId, string $signature): array {
         if (!$this->isConfigured()) {
-            return ['success' => false, 'message' => 'Payment gateway is not configured or disabled.'];
+            return ['success' => false, 'message' => 'Payment gateway is not configured.'];
         }
 
         // 1. Verify HMAC SHA256 Signature
@@ -188,64 +133,19 @@ class RazorpayGateway {
             return ['success' => false, 'message' => 'Payment verification failed: Invalid signature.'];
         }
 
-        return $this->creditWalletForOrder($razorpayOrderId, $razorpayPaymentId, $signature, $userId);
-    }
-
-    /**
-     * Verify and Process Webhook Notification
-     */
-    public function verifyWebhook(string $rawPayload, string $webhookSignature): array {
-        if (empty($this->webhookSecret)) {
-            return ['success' => false, 'message' => 'Webhook secret is not configured.'];
-        }
-
-        $expectedSignature = hash_hmac('sha256', $rawPayload, $this->webhookSecret);
-        if (!hash_equals($expectedSignature, $webhookSignature)) {
-            error_log("Razorpay Webhook Signature Mismatch");
-            return ['success' => false, 'message' => 'Invalid webhook signature.'];
-        }
-
-        $data = json_decode($rawPayload, true);
-        if (!$data || empty($data['event'])) {
-            return ['success' => false, 'message' => 'Invalid webhook payload.'];
-        }
-
-        // Handle payment.captured or order.paid
-        $event = $data['event'];
-        if ($event === 'payment.captured' || $event === 'order.paid') {
-            $paymentEntity = $data['payload']['payment']['entity'] ?? [];
-            $orderId = $paymentEntity['order_id'] ?? '';
-            $paymentId = $paymentEntity['id'] ?? '';
-
-            if (!empty($orderId) && !empty($paymentId)) {
-                return $this->creditWalletForOrder($orderId, $paymentId, 'webhook_verified');
-            }
-        }
-
-        return ['success' => true, 'message' => 'Event noted: ' . $event];
-    }
-
-    /**
-     * Centralized Atomic Wallet Crediting with Row Locking (Idempotency Guaranteed)
-     */
-    private function creditWalletForOrder(string $razorpayOrderId, string $razorpayPaymentId, string $signature, ?int $expectedUserId = null): array {
+        // 2. Fetch Payment Record with DB Transaction & Row Locking
         try {
             DB::beginTransaction();
 
-            $sql = "SELECT * FROM payments WHERE order_id = ? FOR UPDATE";
-            $payment = DB::fetch($sql, [$razorpayOrderId]);
+            $payment = DB::fetch(
+                "SELECT * FROM payments WHERE order_id = ? AND user_id = ? FOR UPDATE",
+                [$razorpayOrderId, $userId]
+            );
 
             if (!$payment) {
                 DB::rollBack();
                 return ['success' => false, 'message' => 'Payment order record not found.'];
             }
-
-            if ($expectedUserId !== null && (int)$payment['user_id'] !== $expectedUserId) {
-                DB::rollBack();
-                return ['success' => false, 'message' => 'Payment user mismatch.'];
-            }
-
-            $userId = (int)$payment['user_id'];
 
             // Prevent duplicate crediting
             if ($payment['status'] === 'completed') {
@@ -266,9 +166,9 @@ class RazorpayGateway {
                 return ['success' => false, 'message' => 'User account not found.'];
             }
 
-            $amountBase = (float)$payment['converted_amount'];
+            $amountUsd = (float)$payment['amount'];
             $balanceBefore = (float)$user['balance'];
-            $balanceAfter = round($balanceBefore + $amountBase, 4);
+            $balanceAfter = round($balanceBefore + $amountUsd, 4);
 
             DB::query("UPDATE users SET balance = ? WHERE id = ?", [$balanceAfter, $userId]);
 
@@ -276,14 +176,7 @@ class RazorpayGateway {
             DB::query(
                 "INSERT INTO transactions (user_id, amount, balance_before, balance_after, type, reference_id, description)
                  VALUES (?, ?, ?, ?, 'deposit', ?, ?)",
-                [
-                    $userId,
-                    $amountBase,
-                    $balanceBefore,
-                    $balanceAfter,
-                    $razorpayPaymentId,
-                    "Deposit via Razorpay ₹" . number_format((float)$payment['amount'], 2) . " INR (Order: {$razorpayOrderId})"
-                ]
+                [$userId, $amountUsd, $balanceBefore, $balanceAfter, $razorpayPaymentId, "Deposit via Razorpay (Order: {$razorpayOrderId})"]
             );
 
             DB::commit();

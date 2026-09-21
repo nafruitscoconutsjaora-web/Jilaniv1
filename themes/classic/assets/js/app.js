@@ -68,12 +68,12 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   // --------------------------------------------------------------------------
-  // 2. User & Admin Panel Mobile Sidebar Toggle & Navigation
+  // 2. User & Admin Panel Mobile Sidebar Toggle
   // --------------------------------------------------------------------------
-  const mobileToggles = document.querySelectorAll('.mobile-toggle, #user_mobile_toggle, #admin_mobile_toggle');
+  const mobileToggle = document.querySelector('.mobile-toggle');
   const sidebar = document.querySelector('.panel-sidebar');
 
-  if (sidebar) {
+  if (mobileToggle && sidebar) {
     let sidebarBackdrop = document.querySelector('.sidebar-backdrop');
     if (!sidebarBackdrop) {
       sidebarBackdrop = document.createElement('div');
@@ -84,53 +84,29 @@ document.addEventListener('DOMContentLoaded', function () {
     function openSidebar() {
       sidebar.classList.add('open');
       sidebarBackdrop.classList.add('open');
-      mobileToggles.forEach(btn => btn.setAttribute('aria-expanded', 'true'));
+      mobileToggle.setAttribute('aria-expanded', 'true');
     }
 
     function closeSidebar() {
       sidebar.classList.remove('open');
       sidebarBackdrop.classList.remove('open');
-      mobileToggles.forEach(btn => btn.setAttribute('aria-expanded', 'false'));
+      mobileToggle.setAttribute('aria-expanded', 'false');
     }
 
-    mobileToggles.forEach(btn => {
-      btn.addEventListener('click', function (e) {
-        e.stopPropagation();
-        if (sidebar.classList.contains('open')) {
-          closeSidebar();
-        } else {
-          openSidebar();
-        }
-      });
-    });
-
-    const closeBtns = sidebar.querySelectorAll('.sidebar-close-btn, #user_sidebar_close, #admin_sidebar_close');
-    closeBtns.forEach(btn => {
-      btn.addEventListener('click', function (e) {
-        e.stopPropagation();
+    mobileToggle.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (sidebar.classList.contains('open')) {
         closeSidebar();
-      });
-    });
-
-    // Close when tapping on any navigation link on mobile
-    const navLinks = sidebar.querySelectorAll('.nav-link, .sidebar-user-card, a');
-    navLinks.forEach(link => {
-      link.addEventListener('click', function () {
-        if (window.innerWidth <= 900) {
-          closeSidebar();
-        }
-      });
+      } else {
+        openSidebar();
+      }
     });
 
     sidebarBackdrop.addEventListener('click', closeSidebar);
 
     // Close when clicking outside
     document.addEventListener('click', function (e) {
-      let clickedToggle = false;
-      mobileToggles.forEach(btn => {
-        if (btn.contains(e.target)) clickedToggle = true;
-      });
-      if (!sidebar.contains(e.target) && !clickedToggle && sidebar.classList.contains('open')) {
+      if (!sidebar.contains(e.target) && !mobileToggle.contains(e.target) && sidebar.classList.contains('open')) {
         closeSidebar();
       }
     });
@@ -148,48 +124,6 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     });
   }
-
-  // --------------------------------------------------------------------------
-  // Theme Switcher Logic (Shared Across Topbar & Sidebar)
-  // --------------------------------------------------------------------------
-  window.toggleDashboardTheme = function () {
-    const current = document.documentElement.getAttribute('data-theme') || 'light';
-    const next = current === 'dark' ? 'light' : 'dark';
-    document.documentElement.setAttribute('data-theme', next);
-
-    const label = document.getElementById('theme_mode_label');
-    const icon = document.getElementById('theme_icon_sun');
-    const topbarSvg = document.getElementById('topbar_theme_svg');
-
-    if (label) label.textContent = next === 'dark' ? 'Dark Mode' : 'Light Mode';
-    if (icon) icon.innerHTML = next === 'dark' ? '&#9790;' : '&#9728;';
-    if (topbarSvg) {
-      if (next === 'dark') {
-        topbarSvg.innerHTML = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>';
-      } else {
-        topbarSvg.innerHTML = '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>';
-      }
-    }
-
-    try {
-      localStorage.setItem('rosesmm_theme', next);
-    } catch (e) {}
-  };
-
-  try {
-    const saved = localStorage.getItem('rosesmm_theme');
-    if (saved === 'dark') {
-      document.documentElement.setAttribute('data-theme', 'dark');
-      const label = document.getElementById('theme_mode_label');
-      const icon = document.getElementById('theme_icon_sun');
-      const topbarSvg = document.getElementById('topbar_theme_svg');
-      if (label) label.textContent = 'Dark Mode';
-      if (icon) icon.innerHTML = '&#9790;';
-      if (topbarSvg) {
-        topbarSvg.innerHTML = '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>';
-      }
-    }
-  } catch (e) {}
 
   // 2. Dynamic Order Calculation (New Order Page)
   const categorySelect = document.getElementById('order_category');
