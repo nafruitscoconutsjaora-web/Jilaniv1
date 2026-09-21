@@ -12,6 +12,19 @@ require_once __DIR__ . '/includes/currency.php';
 require_once __DIR__ . '/includes/smm_provider.php';
 require_once __DIR__ . '/includes/razorpay.php';
 
+// Prevent blank white screens on uncaught exceptions
+set_exception_handler(function (\Throwable $e) {
+    error_log("Uncaught Exception: " . $e->getMessage() . " in " . $e->getFile() . ":" . $e->getLine());
+    if (PHP_SAPI !== 'cli') {
+        if (!headers_sent()) {
+            http_response_code(500);
+        }
+        $isAdmin = strpos($_SERVER['REQUEST_URI'] ?? '', '/admin') !== false;
+        echo '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>System Error</title><link rel="stylesheet" href="/themes/classic/assets/css/style.css"></head><body style="padding:40px;background:#fff1f2;font-family:system-ui,-apple-system,sans-serif;"><div style="max-width:600px;margin:40px auto;background:#fff;padding:24px;border-radius:12px;box-shadow:0 4px 12px rgba(0,0,0,0.05);border:1px solid #fecdd3;"><h3 style="color:#e11d48;margin-top:0;">System Notice</h3><p style="color:#4c0519;font-size:0.9375rem;">' . htmlspecialchars($e->getMessage(), ENT_QUOTES, 'UTF-8') . '</p><div style="margin-top:20px;"><a href="javascript:history.back()" style="color:#e11d48;font-weight:600;margin-right:15px;">&larr; Go Back</a>' . ($isAdmin ? '<a href="/admin/provider-services" style="color:#e11d48;font-weight:600;">Return to Provider Services</a>' : '<a href="/" style="color:#e11d48;font-weight:600;">Home</a>') . '</div></div></body></html>';
+        exit;
+    }
+});
+
 // Parse Request URI
 $requestUri = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH);
 $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
@@ -752,6 +765,7 @@ switch ($requestUri) {
         exit;
 
     case '/admin/provider-services':
+        Auth::requireAdmin();
         require __DIR__ . '/themes/classic/views/admin/provider_services.php';
         exit;
 
@@ -760,26 +774,95 @@ switch ($requestUri) {
         verify_csrf();
 
         $provId = (int)($_POST['provider_id'] ?? 0);
-        $provSrvId = trim($_POST['provider_service_id'] ?? '');
-        $name = trim($_POST['name'] ?? '');
-        $catId = (int)($_POST['category_id'] ?? 0);
-        $originalRate = (float)($_POST['original_rate'] ?? 0);
-        $marginPercent = (float)($_POST['margin_percent'] ?? 30);
-        $min = (int)($_POST['min_quantity'] ?? 10);
-        $max = (int)($_POST['max_quantity'] ?? 10000);
-        $type = trim($_POST['type'] ?? 'default');
 
-        $finalRate = round($originalRate * (1 + ($marginPercent / 100)), 4);
+        try {
+            // Validate Provider
+            $provider = null;
+            if ($provId > 0) {
+                $provider = DB::fetch("SELECT id, name FROM providers WHERE id = ? LIMIT 1", [$provId]);
+            }
+            if (!$provider) {
+                flash_set('error', 'Invalid or missing provider. Please select a valid active provider.');
+                redirect('/admin/provider-services');
+                exit;
+            }
 
-        DB::query(
-            "INSERT INTO services (category_id, provider_id, provider_service_id, name, type, rate, original_rate, min_quantity, max_quantity, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')",
-            [$catId, $provId, $provSrvId, $name, $type, $finalRate, $originalRate, $min, $max]
-        );
+            // Validate Category
+            $catId = (int)($_POST['category_id'] ?? 0);
+            $category = null;
+            if ($catId > 0) {
+                $category = DB::fetch("SELECT id, name FROM categories WHERE id = ? LIMIT 1", [$catId]);
+            }
+            if (!$category) {
+                $defaultCat = DB::fetch("SELECT id, name FROM categories ORDER BY sort_order ASC, id ASC LIMIT 1");
+                if ($defaultCat) {
+                    $catId = (int)$defaultCat['id'];
+                    $category = $defaultCat;
+                } else {
+                    flash_set('error', 'Cannot import service: No categories exist. Please create a category first in Categories settings.');
+                    redirect('/admin/provider-services?provider_id=' . $provId);
+                    exit;
+                }
+            }
 
-        flash_set('success', "Service '{$name}' imported with {$marginPercent}% margin at $" . number_format($finalRate, 4) . "/1K.");
-        redirect('/admin/provider-services?provider_id=' . $provId);
-        exit;
+            // Sanitize & Validate Service Fields
+            $provSrvId = trim((string)($_POST['provider_service_id'] ?? ''));
+            $name = trim((string)($_POST['name'] ?? ''));
+            if ($name === '') {
+                $name = $provSrvId !== '' ? "Provider Service #{$provSrvId}" : "Imported Service";
+            }
+
+            $rawOriginalRate = str_replace(['$', ',', ' '], '', (string)($_POST['original_rate'] ?? '0'));
+            $originalRate = is_numeric($rawOriginalRate) ? max(0.0, (float)$rawOriginalRate) : 0.0;
+
+            $marginPercent = max(0.0, (float)($_POST['margin_percent'] ?? 30.0));
+            $min = max(1, (int)($_POST['min_quantity'] ?? 10));
+            $max = max($min, (int)($_POST['max_quantity'] ?? 10000));
+            $type = trim((string)($_POST['type'] ?? 'Default'));
+            if ($type === '') {
+                $type = 'Default';
+            }
+
+            $finalRate = round($originalRate * (1 + ($marginPercent / 100)), 4);
+
+            // Execute insert with schema column fallback handling
+            try {
+                DB::query(
+                    "INSERT INTO services (category_id, provider_id, provider_service_id, name, type, rate, original_rate, min_quantity, max_quantity, status)
+                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')",
+                    [$catId, $provId, $provSrvId, $name, $type, $finalRate, $originalRate, $min, $max]
+                );
+            } catch (\PDOException $pdoEx) {
+                if (strpos($pdoEx->getMessage(), "Unknown column 'original_rate'") !== false) {
+                    try {
+                        DB::query("ALTER TABLE services ADD COLUMN `original_rate` DECIMAL(15, 4) NULL DEFAULT NULL AFTER `rate`");
+                        DB::query(
+                            "INSERT INTO services (category_id, provider_id, provider_service_id, name, type, rate, original_rate, min_quantity, max_quantity, status)
+                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'active')",
+                            [$catId, $provId, $provSrvId, $name, $type, $finalRate, $originalRate, $min, $max]
+                        );
+                    } catch (\Throwable $eFallback) {
+                        DB::query(
+                            "INSERT INTO services (category_id, provider_id, provider_service_id, name, type, rate, min_quantity, max_quantity, status)
+                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active')",
+                            [$catId, $provId, $provSrvId, $name, $type, $finalRate, $min, $max]
+                        );
+                    }
+                } else {
+                    throw $pdoEx;
+                }
+            }
+
+            flash_set('success', "Service '{$name}' imported with {$marginPercent}% margin at $" . number_format($finalRate, 4) . "/1K.");
+            redirect('/admin/provider-services?provider_id=' . $provId);
+            exit;
+        } catch (\Throwable $e) {
+            error_log("Provider service import error: " . $e->getMessage());
+            flash_set('error', "Import error: " . $e->getMessage());
+            $redirectUrl = '/admin/provider-services' . ($provId > 0 ? '?provider_id=' . $provId : '');
+            redirect($redirectUrl);
+            exit;
+        }
 
     case '/admin/payments':
         require __DIR__ . '/themes/classic/views/admin/payments.php';
