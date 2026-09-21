@@ -79,7 +79,6 @@ CREATE TABLE `services` (
   `name` VARCHAR(255) NOT NULL,
   `type` VARCHAR(50) NOT NULL DEFAULT 'Default',
   `rate` DECIMAL(15, 4) NOT NULL,
-  `original_rate` DECIMAL(15, 4) NULL DEFAULT NULL,
   `min_quantity` INT NOT NULL DEFAULT 10,
   `max_quantity` INT NOT NULL DEFAULT 100000,
   `provider_id` INT NULL,

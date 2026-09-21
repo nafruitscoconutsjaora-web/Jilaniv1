@@ -1,7 +1,7 @@
 <?php
 /**
- * SMM Panel - Real Razorpay Payment Gateway Integration (INR Only)
- * Production-ready server-side order creation & HMAC-SHA256 signature verification in INR
+ * SMM Panel - Real Razorpay Payment Gateway Integration
+ * Production-ready server-side order creation & HMAC-SHA256 signature verification
  */
 
 require_once __DIR__ . '/../db.php';
@@ -33,51 +33,47 @@ class RazorpayGateway {
 
     /**
      * Create Order on Razorpay API (POST https://api.razorpay.com/v1/orders)
-     * Strictly INR Only - amount sent in paise (1 INR = 100 paise)
      */
-    public function createOrder(int $userId, float $amountInr): array {
+    public function createOrder(int $userId, float $amountUsd, string $currencyCode = 'INR', float $exchangeRate = 1.0): array {
         if (!$this->isConfigured()) {
             return [
                 'success' => false,
-                'message' => 'Razorpay payment gateway is not active or awaiting API credentials in Admin Settings.'
+                'message' => 'Razorpay payment gateway is not configured yet. Please enter valid Razorpay credentials in Admin Settings.'
             ];
         }
 
-        // Validate amount in INR
-        $amountInr = round($amountInr, 2);
-        if ($amountInr < 10.0) {
+        // Razorpay supports currencies like INR, USD, EUR, etc.
+        // Convert amount to target currency
+        $convertedAmount = round($amountUsd * $exchangeRate, 2);
+        // Razorpay expects amount in smallest currency sub-unit (e.g. paise for INR, cents for USD)
+        $amountInSubunits = (int)round($convertedAmount * 100);
+
+        if ($amountInSubunits < 100) { // Minimum 1.00
             return [
                 'success' => false,
-                'message' => 'Minimum deposit amount is ₹10.00 INR.'
+                'message' => 'Minimum deposit amount is $1.00.'
             ];
         }
-
-        // Amount in smallest currency sub-unit: Paise for INR
-        $amountInPaise = (int)round($amountInr * 100);
 
         $receipt = 'rcpt_' . $userId . '_' . time();
         $payload = [
-            'amount'          => $amountInPaise,
-            'currency'        => 'INR',
-            'receipt'         => $receipt,
-            'payment_capture' => 1,
-            'notes'           => [
-                'user_id' => (string)$userId,
-                'channel' => 'Rose SMM Panel Wallet Topup'
-            ]
+            'amount' => $amountInSubunits,
+            'currency' => strtoupper($currencyCode),
+            'receipt' => $receipt,
+            'payment_capture' => 1
         ];
 
         $ch = curl_init('https://api.razorpay.com/v1/orders');
         curl_setopt_array($ch, [
             CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST           => true,
-            CURLOPT_POSTFIELDS     => json_encode($payload),
-            CURLOPT_USERPWD        => $this->keyId . ':' . $this->keySecret,
-            CURLOPT_HTTPHEADER     => [
+            CURLOPT_POST => true,
+            CURLOPT_POSTFIELDS => json_encode($payload),
+            CURLOPT_USERPWD => $this->keyId . ':' . $this->keySecret,
+            CURLOPT_HTTPHEADER => [
                 'Content-Type: application/json',
                 'User-Agent: Rose-SMM-Panel/1.0'
             ],
-            CURLOPT_TIMEOUT        => 30,
+            CURLOPT_TIMEOUT => 30,
             CURLOPT_SSL_VERIFYPEER => true
         ]);
 
@@ -105,33 +101,29 @@ class RazorpayGateway {
 
         $razorpayOrderId = $data['id'];
 
-        // Save pending payment record in database for idempotency & auditing in INR
+        // Save pending payment record in database for idempotency & auditing
         DB::query(
             "INSERT INTO payments (user_id, payment_method, order_id, amount, currency, converted_amount, status)
-             VALUES (?, 'razorpay', ?, ?, 'INR', ?, 'pending')",
-            [$userId, $razorpayOrderId, $amountInr, $amountInr]
+             VALUES (?, 'razorpay', ?, ?, ?, ?, 'pending')",
+            [$userId, $razorpayOrderId, $amountUsd, $currencyCode, $convertedAmount]
         );
 
         return [
-            'success'    => true,
-            'order_id'   => $razorpayOrderId,
-            'amount'     => $amountInPaise,
-            'currency'   => 'INR',
-            'key_id'     => $this->keyId,
-            'amount_inr' => $amountInr
+            'success' => true,
+            'order_id' => $razorpayOrderId,
+            'amount' => $amountInSubunits,
+            'currency' => strtoupper($currencyCode),
+            'key_id' => $this->keyId,
+            'converted_amount' => $convertedAmount
         ];
     }
 
     /**
-     * Verify Server-Side Payment Signature and Credit Wallet in INR
+     * Verify Server-Side Payment Signature and Credit Wallet
      */
     public function verifyPayment(int $userId, string $razorpayOrderId, string $razorpayPaymentId, string $signature): array {
         if (!$this->isConfigured()) {
             return ['success' => false, 'message' => 'Payment gateway is not configured.'];
-        }
-
-        if (empty($razorpayOrderId) || empty($razorpayPaymentId) || empty($signature)) {
-            return ['success' => false, 'message' => 'Missing payment verification credentials.'];
         }
 
         // 1. Verify HMAC SHA256 Signature
@@ -167,31 +159,31 @@ class RazorpayGateway {
                 [$razorpayPaymentId, $signature, $payment['id']]
             );
 
-            // 4. Lock user balance row and credit funds in INR
+            // 4. Lock user balance row and credit funds
             $user = DB::fetch("SELECT id, balance FROM users WHERE id = ? FOR UPDATE", [$userId]);
             if (!$user) {
                 DB::rollBack();
                 return ['success' => false, 'message' => 'User account not found.'];
             }
 
-            $amountInr = (float)$payment['amount'];
+            $amountUsd = (float)$payment['amount'];
             $balanceBefore = (float)$user['balance'];
-            $balanceAfter = round($balanceBefore + $amountInr, 4);
+            $balanceAfter = round($balanceBefore + $amountUsd, 4);
 
             DB::query("UPDATE users SET balance = ? WHERE id = ?", [$balanceAfter, $userId]);
 
-            // 5. Add Ledger Transaction Record in INR
+            // 5. Add Ledger Transaction Record
             DB::query(
                 "INSERT INTO transactions (user_id, amount, balance_before, balance_after, type, reference_id, description)
                  VALUES (?, ?, ?, ?, 'deposit', ?, ?)",
-                [$userId, $amountInr, $balanceBefore, $balanceAfter, $razorpayPaymentId, "Deposit via Razorpay (Order: {$razorpayOrderId})"]
+                [$userId, $amountUsd, $balanceBefore, $balanceAfter, $razorpayPaymentId, "Deposit via Razorpay (Order: {$razorpayOrderId})"]
             );
 
             DB::commit();
 
             return [
-                'success'     => true,
-                'message'     => 'Payment verified successfully! ₹' . number_format($amountInr, 2) . ' credited to your wallet.',
+                'success' => true,
+                'message' => 'Payment verified successfully! Your wallet has been credited.',
                 'new_balance' => $balanceAfter
             ];
         } catch (Exception $e) {
@@ -199,59 +191,5 @@ class RazorpayGateway {
             error_log("Payment verification transaction failed: " . $e->getMessage());
             return ['success' => false, 'message' => 'An internal database error occurred while crediting wallet.'];
         }
-    }
-
-    /**
-     * Webhook Handler for automated asynchronous payment capture verification
-     */
-    public function handleWebhook(string $rawPayload, string $signature): array {
-        if (!empty($this->webhookSecret)) {
-            $expectedSignature = hash_hmac('sha256', $rawPayload, $this->webhookSecret);
-            if (!hash_equals($expectedSignature, $signature)) {
-                return ['success' => false, 'message' => 'Invalid webhook signature'];
-            }
-        }
-
-        $event = json_decode($rawPayload, true);
-        if (!$event || empty($event['event'])) {
-            return ['success' => false, 'message' => 'Invalid event payload'];
-        }
-
-        if (in_array($event['event'], ['payment.captured', 'order.paid'])) {
-            $paymentObj = $event['payload']['payment']['entity'] ?? [];
-            $orderId = $paymentObj['order_id'] ?? '';
-            $paymentId = $paymentObj['id'] ?? '';
-
-            if (!empty($orderId)) {
-                $payment = DB::fetch("SELECT * FROM payments WHERE order_id = ? LIMIT 1", [$orderId]);
-                if ($payment && $payment['status'] === 'pending') {
-                    $userId = (int)$payment['user_id'];
-                    $amountInr = (float)$payment['amount'];
-
-                    DB::beginTransaction();
-                    try {
-                        DB::query("UPDATE payments SET payment_id = ?, status = 'completed', updated_at = NOW() WHERE id = ?", [$paymentId, $payment['id']]);
-                        $user = DB::fetch("SELECT id, balance FROM users WHERE id = ? FOR UPDATE", [$userId]);
-                        if ($user) {
-                            $balanceBefore = (float)$user['balance'];
-                            $balanceAfter = round($balanceBefore + $amountInr, 4);
-                            DB::query("UPDATE users SET balance = ? WHERE id = ?", [$balanceAfter, $userId]);
-                            DB::query(
-                                "INSERT INTO transactions (user_id, amount, balance_before, balance_after, type, reference_id, description)
-                                 VALUES (?, ?, ?, ?, 'deposit', ?, ?)",
-                                [$userId, $amountInr, $balanceBefore, $balanceAfter, $paymentId, "Webhook Deposit via Razorpay (Order: {$orderId})"]
-                            );
-                        }
-                        DB::commit();
-                        return ['success' => true, 'message' => 'Webhook processed successfully'];
-                    } catch (Exception $e) {
-                        DB::rollBack();
-                        return ['success' => false, 'message' => $e->getMessage()];
-                    }
-                }
-            }
-        }
-
-        return ['success' => true, 'message' => 'Event ignored'];
     }
 }

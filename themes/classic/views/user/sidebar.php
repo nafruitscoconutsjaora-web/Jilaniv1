@@ -33,9 +33,6 @@ $siteName = e(get_setting('site_name', 'Rose SMM Panel'));
     <a href="/tickets" class="nav-link <?= $currentPage === 'tickets' ? 'active' : '' ?>" id="link_tickets">
       Support Tickets
     </a>
-    <a href="/affiliates" class="nav-link <?= $currentPage === 'affiliates' ? 'active' : '' ?>" id="link_affiliates">
-      Affiliates / Referral
-    </a>
     <a href="/profile" class="nav-link <?= $currentPage === 'profile' ? 'active' : '' ?>" id="link_profile">
       Account Profile
     </a>
