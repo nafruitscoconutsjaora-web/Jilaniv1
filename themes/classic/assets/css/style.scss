@@ -1,0 +1,33 @@
+// ==========================================================================
+// Rose SMM Panel - SCSS Design System Source
+// ==========================================================================
+
+$primary-rose: #e11d48;
+$primary-rose-hover: #be123c;
+$primary-rose-active: #9f1239;
+
+$rose-50: #fff1f2;
+$rose-100: #ffe4e6;
+$rose-200: #fecdd3;
+$rose-300: #fda4af;
+$rose-400: #fb7185;
+$rose-500: #f43f5e;
+$rose-600: #e11d48;
+$rose-700: #be123c;
+$rose-800: #9f1239;
+$rose-900: #881337;
+
+$bg-page: #faf9fb;
+$bg-surface: #ffffff;
+$bg-subtle: #fff5f6;
+
+$text-main: #0f172a;
+$text-muted: #64748b;
+$text-light: #94a3b8;
+
+$radius-sm: 8px;
+$radius-md: 12px;
+$radius-lg: 16px;
+$radius-pill: 9999px;
+
+@import "style.css";

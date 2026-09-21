@@ -1,0 +1,6 @@
+{
+  "name": "SMM Panel",
+  "description": "A secure, production-ready SMM Panel built with Core PHP, MySQL, pure CSS/SCSS, and vanilla JavaScript featuring Rose and White design.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
